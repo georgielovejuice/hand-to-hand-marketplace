@@ -1,0 +1,1 @@
+import {validateTrimmedFullname, validateTrimmedUsername} from './shared.js';
