@@ -1,6 +1,7 @@
 import LoginPage from './LoginPage.js';
 import RegisterPage from './RegisterPage.js';
 import YourPage from './YourPage.js'
+import BrowsePage from './BrowsePage.js'
 
 import './App.css';
 import {useState} from 'react';
@@ -8,17 +9,28 @@ import {useState} from 'react';
 function App() {
 	const apiURL = "http://localhost:5001/api";
 	
-	const [pageToRedirectTo, setPageToRedirectTo] = useState('Login');
+	const [currentPage, setCurrentPage] = useState('Login');
 	const [username, setUsername] = useState(null);
 	const [hashedPassword, setHashedPassword] = useState(null);	
 	
+	function PageTabs(){
+		return(
+			<div>
+				<button onClick={() => {setCurrentPage('Browse');}}>Browse</button>
+				<button onClick={() => {setCurrentPage('Chat');}}>Chat</button>
+				<button onClick={() => {setCurrentPage('Your Items');}}>Your items</button>	
+				<button onClick={() => {setCurrentPage("Your Page");}}>{username}</button>								
+			</div>
+		);
+	}
+	
 	let displayPage = null;
-	switch(pageToRedirectTo){
+	switch(currentPage){
 		case('Login'):
 			displayPage = <LoginPage 
 				apiURL={apiURL} 
-				redirectToHome={() => setPageToRedirectTo('Home')} 
-				redirectToRegister={() => setPageToRedirectTo('Register')}
+				redirectToHome={() => setCurrentPage('Browse')} 
+				redirectToRegister={() => setCurrentPage('Register')}
 				setUsername={setUsername}
 				setHashedPassword={setHashedPassword}
 			/>;
@@ -26,39 +38,36 @@ function App() {
 		case('Register'):
 			displayPage = <RegisterPage 
 				apiURL={apiURL} 
-				redirectToHome={() => {setPageToRedirectTo('Home')}} 
-				redirectToLogin={() => {setPageToRedirectTo('Login')}}
+				redirectToHome={() => {setCurrentPage('Browse')}} 
+				redirectToLogin={() => {setCurrentPage('Login')}}
 				setUsername={setUsername}
 				setHashedPassword={setHashedPassword}				
 			/>;
 			break;
-		case('Home'):
-			displayPage = <div>
-					<button>Browse</button>
-					<button>Chat</button>
-					<button>Your items</button>
-					<button onClick={() => {setPageToRedirectTo("Your Page");}}>{username}</button>					
-				</div>
+		case('Browse'):
+			displayPage = <BrowsePage apiURL={apiURL}/>
 			break;
 		case('Your Page'):
 			displayPage = <YourPage
-				redirectToHome={() => {setPageToRedirectTo("Home");}}
-				redirectToLogin={() => {setPageToRedirectTo("Login");}}
+				redirectToHome={() => {setCurrentPage("Browse");}}
+				redirectToLogin={() => {setCurrentPage("Login");}}
 				username={username}
 				clearUsername={() => {setUsername(null);}}
 				clearHashedPassword={() => {setHashedPassword(null);}}
 			/>
 			break;
 		default: 
-			displayPage = 
-				<div>
-					<p>{pageToRedirectTo} page not implemented.</p>
-					<button onClick={() => {setPageToRedirectTo('Login');}}>To Login</button>
-				</div>
+			displayPage = <div>
+				<p>{currentPage} page not implemented.</p>
+				<button onClick={() => {setCurrentPage('Login');}}>To Login</button>
+			</div>
 	}
+	
+	const pagesWithoutPageTabs = ['Login', 'Register'];
 	
   return (
     <div>
+		{pagesWithoutPageTabs.includes(currentPage) ? null : <PageTabs/>}
 		{displayPage}
     </div>
   );

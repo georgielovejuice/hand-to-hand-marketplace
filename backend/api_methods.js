@@ -35,3 +35,16 @@ export async function registerUser(parsedObject, userCollection, response){
 	if(insertedDocument) response.json({registerUserStatus: "OK"});
 	else response.json({registerUserStatus: "Failed to write to database."});
 }
+
+
+export async function queryItems(parsedObject, itemCollection, response){
+	if(typeof parsedObject.query === undefined)
+		throw new SyntaxError("Request does not have query attribute.");
+	
+	const MatchingItemsIterator = itemCollection.find(parsedObject.query);
+	
+	const items = [];
+	for await(const item of MatchingItemsIterator)
+		items.push(item);
+	response.json({items: items});
+}
