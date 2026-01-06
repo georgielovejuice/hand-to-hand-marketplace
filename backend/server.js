@@ -4,6 +4,7 @@ import cors from "cors";
 import { MongoClient } from "mongodb";
 import { databaseUsername, databasePassword } from "./databaseCredentials.js";
 import myItemsRoute from "./routes/myItems.js";
+import { generateToken } from "./middleware/auth.js";
 
 const app = express();
 const port = 3001;
@@ -23,6 +24,20 @@ async function connectDB() {
 /* ---------- Middleware ---------- */
 app.use(express.json());
 app.use(cors());
+
+/* ---------- Auth Route ---------- */
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  // TEMP SIMPLE CHECK (as per assignment rule)
+  if (!username || password !== username) {
+    return res.status(401).json({ error: "Invalid credentials" });
+  }
+
+  const token = generateToken(username);
+
+  res.json({ token });
+});
 
 /* ---------- Routes ---------- */
 app.get("/health", (req, res) => {

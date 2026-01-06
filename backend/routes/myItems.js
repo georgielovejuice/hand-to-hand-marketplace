@@ -1,13 +1,15 @@
 // backend/routes/myItems.js
 import express from "express";
 import { ObjectId } from "mongodb";
+import { verifyToken } from "../middleware/auth.js";
 
 export default function myItemsRoute(getDB) {
   const router = express.Router();
+  router.use(verifyToken);
 
   /* ---------- GET: list my items ---------- */
   router.get("/", async (req, res) => {
-    const username = req.headers["x-username"];
+    const username = req.user.username;
     if (!username) {
       return res.status(401).json({ error: "Missing credentials" });
     }
@@ -23,7 +25,7 @@ export default function myItemsRoute(getDB) {
 
   /* ---------- POST: create item ---------- */
   router.post("/", async (req, res) => {
-    const username = req.headers["x-username"];
+    const username = req.user.username;
     if (!username) {
       return res.status(401).json({ error: "Missing credentials" });
     }
@@ -46,7 +48,7 @@ export default function myItemsRoute(getDB) {
 
   /* ---------- DELETE: remove item ---------- */
   router.delete("/:id", async (req, res) => {
-    const username = req.headers["x-username"];
+    const username = req.user.username;
     if (!username) {
       return res.status(401).json({ error: "Missing credentials" });
     }
@@ -64,7 +66,7 @@ export default function myItemsRoute(getDB) {
 
   /* ---------- PUT: update item ---------- */
     router.put("/:id", async (req, res) => {
-    const username = req.headers["x-username"];
+    const username = req.user.username;
     if (!username) {
         return res.status(401).json({ error: "Missing credentials" });
     }
