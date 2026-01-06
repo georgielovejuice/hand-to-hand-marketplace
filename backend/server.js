@@ -29,13 +29,11 @@ app.use(cors());
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
-  // TEMP SIMPLE CHECK (as per assignment rule)
   if (!username || password !== username) {
     return res.status(401).json({ error: "Invalid credentials" });
   }
 
   const token = generateToken(username);
-
   res.json({ token });
 });
 
