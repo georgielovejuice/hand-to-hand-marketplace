@@ -1,41 +1,102 @@
-const express = require("express");
-const { getDB } = require("../server");
-const router = express.Router();
-module.exports = router;
+// backend/routes/myItems.js
+import express from "express";
+import { ObjectId } from "mongodb";
 
-router.get("/my-items", async (req, res) => {
-  const db = getDB();
-  const items = await db
-    .collection("items")
-    .find({ owner: req.user.username })
-    .toArray();
+export default function myItemsRoute(getDB) {
+  const router = express.Router();
 
-  res.json(items);
-});
+  /* ---------- GET: list my items ---------- */
+  router.get("/", async (req, res) => {
+    const username = req.headers["x-username"];
+    if (!username) {
+      return res.status(401).json({ error: "Missing credentials" });
+    }
 
-router.post("/my-items", async (req, res) => {
-  const item = {
-    ...req.body,
-    owner: req.user.username,
-    createdAt: new Date(),
-    isSold: false
-  };
+    const db = getDB();
+    const items = await db
+      .collection("item")
+      .find({ ownerUsername: username })
+      .toArray();
 
-  await getDB().collection("items").insertOne(item);
-  res.json({ success: true });
-});
+    res.json(items);
+  });
 
-router.delete("/my-items/:id", async (req, res) => {
-  const { id } = req.params;
+  /* ---------- POST: create item ---------- */
+  router.post("/", async (req, res) => {
+    const username = req.headers["x-username"];
+    if (!username) {
+      return res.status(401).json({ error: "Missing credentials" });
+    }
 
-  const item = await getDB().collection("items").findOne({ _id: new ObjectId(id) });
+    const { name, imageUrl, price, category, details } = req.body;
+    const db = getDB();
 
-  if (item.owner !== req.user.username) {
-    return res.status(403).json({ error: "Forbidden" });
-  }
+    await db.collection("item").insertOne({
+      name,
+      imageUrl,
+      price,
+      category,
+      details,
+      ownerUsername: username,
+      createdAt: new Date()
+    });
 
-  await getDB().collection("items").deleteOne({ _id: item._id });
-  res.json({ success: true });
-});
+    res.json({ success: true });
+  });
 
+  /* ---------- DELETE: remove item ---------- */
+  router.delete("/:id", async (req, res) => {
+    const username = req.headers["x-username"];
+    if (!username) {
+      return res.status(401).json({ error: "Missing credentials" });
+    }
 
+    const db = getDB();
+    const { id } = req.params;
+
+    await db.collection("item").deleteOne({
+      _id: new ObjectId(id),
+      ownerUsername: username
+    });
+
+    res.json({ success: true });
+  });
+
+  /* ---------- PUT: update item ---------- */
+    router.put("/:id", async (req, res) => {
+    const username = req.headers["x-username"];
+    if (!username) {
+        return res.status(401).json({ error: "Missing credentials" });
+    }
+
+    const { id } = req.params;
+    const { name, imageUrl, price, category, details } = req.body;
+
+    const db = getDB();
+
+    const result = await db.collection("item").updateOne(
+        {
+        _id: new ObjectId(id),
+        ownerUsername: username
+        },
+        {
+        $set: {
+            name,
+            imageUrl,
+            price,
+            category,
+            details,
+            updatedAt: new Date()
+        }
+        }
+    );
+
+    if (result.matchedCount === 0) {
+        return res.status(404).json({ error: "Item not found or not yours" });
+    }
+
+    res.json({ success: true });
+    });
+
+  return router;
+}
