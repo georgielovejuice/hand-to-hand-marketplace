@@ -109,6 +109,11 @@ export default function BrowsePage({apiURL}){
 			if(requestQueryItems){
 				//May throw undocumented exceptions
 				const itemObjects = await requestServerService(apiURL, JSON.stringify(serviceRequest), setErrorMessage, handleObjectFromResponse);
+				if(!itemObjects){
+					//If itemObjects is null, requestServerService sets the error message via setErrorMessage.
+					return;
+				}
+				
 				const itemPanelArray = [];
 				for(const item of itemObjects){
 					itemPanelArray.push(<Item 

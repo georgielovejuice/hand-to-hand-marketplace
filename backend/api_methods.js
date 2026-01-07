@@ -83,10 +83,9 @@ export async function queryItems(parsedObject, itemCollection, response){
 		return itemsHavingSearchTokens;
 	}
 	
-	
 	if(typeof parsedObject.searchBarText !== "string")
 		throw new SyntaxError("SearchBarText attribute of request is not string type.");	
-	if(typeof parsedObject.query !== Object)
+	if(!(parsedObject.query instanceof Object))
 		throw new SyntaxError("Request does not have query attribute.");
 	
 	const MatchingItemsIterator = itemCollection.find(parsedObject.query);
