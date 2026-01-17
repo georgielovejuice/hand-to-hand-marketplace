@@ -30,4 +30,3 @@ See `/docs` for architecture and API documentation.
 - Setting up what app can do (Use case)
 - Flow diagram + ER diagram (Database)
 - Work Flow (To show where does data flow?)
-

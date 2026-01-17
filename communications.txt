@@ -1,0 +1,45 @@
+Base format for client to server:{
+	requestType: str,
+	[fields based on requestType]
+}
+
+ToClient.error:{
+	error: str 
+}
+
+Error reporting from server:
+	1. Specified JSON response form from server of a communication
+	2. ToClient.error for malformed JSON request from client for a communication
+	3. HTTP status 500 (Internal Server Error) if server encounters unexpected exception
+
+Attributes beyond the ones specified for a communication on both sides are ignored.
+
+
+Logging in:
+	To verify if user had entered valid credentials, the client sends:{
+		requestType: "validateCredentials",
+		username: str,
+		hashedPassword: str,
+	} with "Content-Type": "application/json" as one of the request headers.
+	
+	Server responds with{
+		validCredentials: "OK" | "Username not found." | "Invalid password." 
+	}
+	; or ToClient.error
+	; or HTTP status 500
+
+
+Registering:
+	To register a user, the client sends:{
+		requestType: "registerUser",
+		username: str,
+		fullname: str,
+		hashedPassword: str,
+	} with "Content-Type": "application/json" as one of the request headers.
+	
+	The server responds with 
+	{
+		registerUserStatus: "OK" | "Username already exists." | "Failed to write to database."
+	}
+	; or ToClient.Error
+	; or HTTP status 500
