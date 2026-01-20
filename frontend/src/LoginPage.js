@@ -39,7 +39,7 @@ export default function LoginPage({
 			return;
 		}
 
-		const hashedPassword = (new Hashes.SHA256()).hex(plaintextPassword);		
+		const hashedPassword = (new Hashes.SHA256()).hex(plaintextPassword);
 		let httpResponse = null;
 
 		try{
