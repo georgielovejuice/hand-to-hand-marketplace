@@ -5,8 +5,7 @@ export default function Login({
 	credentialsVerifierURL, 
 	redirectToHome, 
 	redirectToRegister, 
-	setUserEmail, 
-	setHashedPassword,
+	setUserObject,
 }){
   const [form, setForm] = useState({
     email: "",
@@ -20,6 +19,7 @@ export default function Login({
     setError("");
 
 		let response = null;
+		const hashedPassword = (new Hashes.SHA256()).hex(form.password.trim());
     try {
 			/*
 			Based on Window.fetch(), raises
@@ -33,18 +33,22 @@ export default function Login({
       response = await fetch(credentialsVerifierURL, {
 				method: "POST",
 				headers: {"Content-Type": "application/json"},
+				/*
+				Raises TypeError if the parameter object has a circular reference 
+				or BigInt value is in the parameter object
+				*/
 				body: JSON.stringify({
-					email: form.email,
-					password: (new Hashes.SHA256()).hex(form.password)
+					email: form.email.trim(),
+					password: hashedPassword
 				})
 			});
 		}catch(err){
-			//No catch for AbortError, React couldn't find its definition
-			if(err instanceof TypeError) setError("Couldn't connect to the server.");
-			else setError("Error: " + err);
-			return;
-		}
-			
+				//No catch for AbortError, React couldn't find its definition
+				if(err instanceof TypeError) setError("Couldn't connect to server.");		
+				else setError("Error: " + err);
+				return;
+			}
+
 		try{
 			/*
 			Raises
@@ -56,16 +60,25 @@ export default function Login({
 			const objectFromResponse = await response.json();
 			
 			if(!(response.ok)){
-				setError(objectFromResponse.message ? objectFromResponse.message : "Received HTTP status " + response.status + " from server.");
+				setError(objectFromResponse.message ? objectFromResponse.message 
+									: "Received HTTP status " + response.status + " from server.");
 				return;
 			}
-			setUserEmail(form.email);
-			setHashedPassword((new Hashes.SHA256()).hex(form.password));
+
+			const placeholderProfilePictureURL = "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"
+			setUserObject({
+				email: form.email,
+				hashedPassword: hashedPassword,
+				name: objectFromResponse.name || 'User',
+				profilePictureURL: objectFromResponse.profilePicture || placeholderProfilePictureURL,
+				phoneNumber: objectFromResponse.phone || ''
+			});
+
 			redirectToHome();
     } catch (err) {
 			//No catch for AbortError, React couldn't find its definition
-			if(err instanceof TypeError) setError("Couldn't decode response body from server.");		
-			else if(err instanceof SyntaxError) setError("Couldn't parse JSON response from server.");						
+			if(err instanceof TypeError) setError("Couldn't decode body of server response.");		
+			if(err instanceof SyntaxError) setError("Couldn't parse JSON response from server.");						
 			else setError("Error: " + err);
 		}
   };

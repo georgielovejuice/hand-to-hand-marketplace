@@ -5,8 +5,7 @@ export default function Register({
 	registrationURL, 
 	redirectToLogin, 
 	redirectToHome,
-	setUsername,
-	setHashedPassword,
+	setUserObject,
 }){
   const [form, setForm] = useState({
     name: "",
@@ -22,9 +21,10 @@ export default function Register({
     setLoading(true);
 
 		let response = null;
+		const trimmedEmail = form.email.trim();
+		const trimmedName = form.name.trim();
+		const hashedPassword = (new Hashes.SHA256()).hex(form.password.trim());
     try {
-			const formCopy = form;
-			formCopy.password = (new Hashes.SHA256()).hex(form.password);
 			/*
 			Based on Window.fetch(), raises
 			- AbortError if abort() is called
@@ -39,7 +39,15 @@ export default function Register({
       response = await fetch(registrationURL, {
 				method: "POST",
 				headers: {"Content-Type": "application/json"},
-				body: JSON.stringify(formCopy)
+				/*
+				Raises TypeError if the parameter object has a circular reference 
+				or BigInt value is in the parameter object
+				*/
+				body: JSON.stringify({
+					name: trimmedName,
+					email: trimmedEmail,
+					password: hashedPassword
+				}),
 			});
 		}catch(err){
 			//No catch for AbortError, React couldn't find its definition
@@ -59,12 +67,19 @@ export default function Register({
 			*/
 			const objectFromResponse = await response.json();
 			
-			if(response.ok) redirectToHome();
-			else{
-				setError(objectFromResponse.message ? objectFromResponse.message : "Received HTTP status " + response.status + " from server.");
-				setLoading(false);
+			if(response.ok){
+				const placeholderProfilePictureURL = "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg";
+				setUserObject({
+					email: trimmedEmail,
+					hashedPassword: hashedPassword,
+					name: trimmedName,
+					profilePictureURL: objectFromResponse.profilePicture || placeholderProfilePictureURL,
+					phoneNumber: objectFromResponse.phone || ''
+				});
+				redirectToHome();
 			}
-
+			else setError(objectFromResponse.message ? objectFromResponse.message 
+										: "Received HTTP status " + response.status + " from server.");
     } catch (err) {
 			//No catch for AbortError, React couldn't find its definition
 			if(err instanceof TypeError) setError("Couldn't decode response body from server.");		

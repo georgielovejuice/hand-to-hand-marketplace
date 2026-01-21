@@ -14,7 +14,9 @@ router.get("/", async (req, res) => {
 		const HTTP_STATUS_FOR_UNAUTHORIZED = 401;
 		if(user.hashedPassword !== hashedpassword) 
 			return res.status(HTTP_STATUS_FOR_UNAUTHORIZED).json({message: "Password mismatch"});
-
+		
+		//User already authenticated with the same hash, so don't send
+		delete user.hashedPassword;
     res.json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -33,11 +35,11 @@ router.put("/", async (req, res) => {
       return res.status(404).json({ message: "User not found" });
 
 		const HTTP_STATUS_FOR_UNAUTHORIZED = 401;
-		if(user.hashedPassword !== hashedpassword) 
+		if(user.hashedPassword !== hashedPassword) 
 			return res.status(HTTP_STATUS_FOR_UNAUTHORIZED).json({message: "Password mismatch"});
 		
 		const newEmailCollision = await userCollection.findOne({email: newEmail});
-    if (newEmailCollision)
+    if ((originalEmail !== newEmail) && newEmailCollision)
 			return res.status(401).json({message: "New email corresponds to another user."});
 		
 		const updateResult = await userCollection.updateOne(user, {
@@ -48,7 +50,7 @@ router.put("/", async (req, res) => {
 				profilePicture: profilePicture || user.profilePicture
 			}
 		});
-		if(updateResult.acknowledged) res.json({ message: "Profile updated successfully", user });
+		if(updateResult.acknowledged) res.json({ message: "Profile updated successfully" });
 		else res.status(500).json({message: "Database did not acknowledge the change."});
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -1,7 +1,7 @@
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
-import Profile from './pages/Profile.jsx'
-import BrowsePage from './BrowsePage.js'
+import Profile from './pages/Profile.jsx';
+import BrowsePage from './BrowsePage.js';
 import HomeTab from './HomeTab.js';
 
 import './App.css';
@@ -11,8 +11,14 @@ function App() {
 	const apiURL = "http://localhost:5001/api";
 	
 	const [currentPage, setCurrentPage] = useState('Login');
-	const [userEmail, setUserEmail] = useState(null);
-	const [hashedPassword, setHashedPassword] = useState(null);	
+	const [userObject, setUserObject] = useState({
+		email: '',
+		hashedPassword: '',
+		name: '',
+		profilePictureURL: '',
+		phoneNumber: '',
+	});
+	const [errorMessage, setErrorMessage] = useState('');
 	
 	let displayPage = null;
 	switch(currentPage){
@@ -21,8 +27,7 @@ function App() {
 				credentialsVerifierURL={apiURL + '/auth/login'} 
 				redirectToHome={() => setCurrentPage('Browse')} 
 				redirectToRegister={() => setCurrentPage('Register')}
-				setUserEmail={setUserEmail}
-				setHashedPassword={setHashedPassword}
+				setUserObject={setUserObject}
 			/>;
 			break;
 		case('Register'):
@@ -30,8 +35,7 @@ function App() {
 				registrationURL={apiURL + '/auth/register'} 
 				redirectToHome={() => {setCurrentPage('Browse')}} 
 				redirectToLogin={() => {setCurrentPage('Login')}}	
-				setUserEmail={setUserEmail}
-				setHashedPassword={setHashedPassword}
+				setUserObject={setUserObject}
 			/>;
 			break;
 		case('Browse'):
@@ -41,8 +45,8 @@ function App() {
 			displayPage = <Profile
 				profileAPIURL={apiURL + '/profile'}
 				changePasswordAPIURL={apiURL + '/profile/password'}
-				userEmail={userEmail}
-				hashedPassword={hashedPassword}
+				userObject={userObject}
+				setUserObject={setUserObject}
 			/>
 			break;
 		default: 
@@ -62,7 +66,12 @@ function App() {
 				redirectToChatsPage={() => setCurrentPage('Chats')}
 				redirectToMyListingsPage={() => setCurrentPage('My Items')}
 				redirectToProfilePage={() => setCurrentPage('Your Page')}
-				logout={() => {setUserEmail(null); setHashedPassword(null); setCurrentPage('Login');}}
+				username={userObject.name}
+				userProfilePictureURL={userObject.profilePictureURL}
+				logout={() => {
+					setUserObject(null);
+					setCurrentPage('Login');
+				}}
 			/>
 		}
 		{displayPage}

@@ -5,7 +5,6 @@ import mongoClient from '../database.js';
 router.post("/login", async(req,res) => {
 	const userDatabase = mongoClient.db("User");
 	const userCollection = userDatabase.collection("User");	
-	console.log(userCollection);
 	
     try {
         const { email,password } = req.body;
@@ -14,14 +13,16 @@ router.post("/login", async(req,res) => {
         if (!user)
             return res.status(400).json({ message: "User not found "});
         
-        const match = password === user.hashedPassword;
-        if (!match)
-            return res.status(400).json({ message: "Wrong password" })
-
-        res.json({validCredentials: true});
+        const match = (password === user.hashedPassword);
+        if (!match) return res.status(400).json({ message: "Wrong password" })
+				
+				//User logged in with these so don't include them
+				delete user.email;
+				delete user.hashedPassword;
+        res.json(user);
     } catch (error) {
 			console.log(error);
-        res.status(500).json({ message: error.message })
+			res.status(500).json({ message: error.message })
     }
 });
 
@@ -36,14 +37,17 @@ router.post("/register", async (req,res) => {
         const existing = await userCollection.findOne({email: email});
         if (existing) return res.status(400).json({message: "Email Already Exists"})
 
-        const insertedDocument = await userCollection.insertOne({
-            name: name,
-            email: email,
-            hashedPassword: password
-        });
-				if(insertedDocument) res.status(201).json({message: "User created"});
+				const placeholderProfilePictureURL = "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"
+				const initialUserObjectWithoutCredentials = {
+					name: name || 'User',
+					profilePicture: placeholderProfilePictureURL,
+					phone: ''
+        };
+        const insertedDocument = await userCollection.insertOne({...initialUserObjectWithoutCredentials, email: email, hashedPassword: password});
+				if(insertedDocument) res.status(201).json(initialUserObjectWithoutCredentials);
 				else res.status(500).json({message: "Server couldn't register user."});
     } catch (error) {
+			console.log(error);
 			res.status(500).json({message: error.message})
     }
 });

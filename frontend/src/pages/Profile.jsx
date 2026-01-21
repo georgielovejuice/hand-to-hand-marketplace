@@ -4,17 +4,16 @@ import Hashes from 'jshashes/hashes.js';
 export default function Profile({
 	profileAPIURL,
 	changePasswordAPIURL,
-	userEmail,
-	hashedPassword,
+	userObject,
+	setUserObject,
 }){
-  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("profile");
   const [editMode, setEditMode] = useState(false);
   
   const [form, setForm] = useState({
     name: "",
-    email: userEmail,
+    email: userObject.email,
     phone: "",
     profilePicture: "",
   });
@@ -45,8 +44,8 @@ export default function Profile({
 				method: "GET",
 				headers: {
 					"Content-Type": "application/json",
-					email: userEmail,
-					hashedPassword: hashedPassword,
+					email: userObject.email,
+					hashedPassword: userObject.hashedPassword,
 				}
 			});
 		}catch(err){
@@ -67,19 +66,26 @@ export default function Profile({
 			*/
 			const objectFromResponse = await response.json();
 			if(!(response.ok)){
-				setError(objectFromResponse.message ? objectFromResponse.message : "Received HTTP status " + response.status + " from server.");
+				setError(objectFromResponse.message ? objectFromResponse.message 
+									: "Received HTTP status " + response.status + " from server.");
 				setLoading(false);
 				return;
 			}
-			
-      setUser(objectFromResponse);
-			console.log(objectFromResponse);
+
+			setUserObject({
+				...userObject,
+				email: objectFromResponse.email || userObject.email,
+				name: objectFromResponse.name || userObject.name,
+				profilePictureURL: objectFromResponse.profilePicture || userObject.profilePictureURL,
+				phoneNumber: objectFromResponse.phone || userObject.phoneNumber,				
+			});	
+
       setForm({
-        name: objectFromResponse.name,
-        email: objectFromResponse.email,
-        phone: objectFromResponse.phone || "",
-        profilePicture: objectFromResponse.profilePicture || "",
-      });
+        name: objectFromResponse.name || userObject.name,
+        email: objectFromResponse.email || userObject.email,
+        phone: objectFromResponse.phone || userObject.phoneNumber,
+        profilePicture: objectFromResponse.profilePicture || userObject.profilePictureURL,				
+			});
 			setError('');
     }catch (err){
 			//No catch for AbortError, React couldn't find its definition
@@ -96,6 +102,10 @@ export default function Profile({
     setSuccess("");
 		
 		let response = null;
+		const trimmedName = form.name.trim();
+		const trimmedEmail = form.email.trim();
+		const trimmedPhoneNumber = form.phone.trim();
+		const trimmedProfilePictureURL = form.profilePicture.trim();
     try {
 			/*
 			Based on Window.fetch(), raises
@@ -108,15 +118,19 @@ export default function Profile({
 			*/
       response = await fetch(profileAPIURL, {
 				method: "PUT",
-				headers: {"Content-Type": "application/json",},
+				headers: {"Content-Type": "application/json"},
+				/*
+					Raises TypeError if the parameter object has a circular reference 
+					or BigInt value is in the parameter object
+				*/
 				body: JSON.stringify({
-					originalEmail: userEmail,
-					hashedPassword: hashedPassword,
+					originalEmail: userObject.email,
+					hashedPassword: userObject.hashedPassword,
 					
-					name: form.name,
-					newEmail: userEmail,
-					phone: form.phone,
-					profilePicture: form.profilePicture
+					name: trimmedName,
+					newEmail: trimmedEmail,
+					phone: trimmedPhoneNumber,
+					profilePicture: trimmedProfilePictureURL
 				})
 			});
 		}catch(err){
@@ -137,10 +151,18 @@ export default function Profile({
 			*/
 			const objectFromResponse = await response.json();
 			if(!(response.ok)){
-				setError(objectFromResponse.message ? objectFromResponse.message : "Received HTTP status " + response.status + " from server.");
+				setError(objectFromResponse.message ? objectFromResponse.message 
+									: "Received HTTP status " + response.status + " from server.");
 				return;
 			}
 			
+			setUserObject({
+				...userObject,
+				email: trimmedEmail,
+				name: trimmedName,
+				profilePictureURL: trimmedProfilePictureURL,
+				phoneNumber: trimmedPhoneNumber
+			});
 			setSuccess("Profile updated successfully!");
 			setEditMode(false);
     }catch (err){
@@ -156,11 +178,17 @@ export default function Profile({
     setError("");
     setSuccess("");
 
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+		const trimmedNewPassword = passwordForm.newPassword.trim();
+		const trimmedConfirmingPassword = passwordForm.confirmPassword.trim();
+		const trimmedCurrentPassword = passwordForm.currentPassword.trim();
+		
+    if (trimmedNewPassword !== trimmedConfirmingPassword) {
       setError("New passwords don't match!");
       return;
     }
 
+		const hashedOriginalPassword = (new Hashes.SHA256()).hex(trimmedCurrentPassword);
+		const hashedNewPassword = (new Hashes.SHA256()).hex(trimmedNewPassword);
 		let response = null;
     try {
 			/*
@@ -174,13 +202,15 @@ export default function Profile({
 			*/
       response = await fetch(changePasswordAPIURL, {
 				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
+				headers: {"Content-Type": "application/json"},
+				/*
+					Raises TypeError if the parameter object has a circular reference 
+					or BigInt value is in the parameter object
+				*/
 				body: JSON.stringify({
-					email: userEmail,
-					hashedOriginalPassword: (new Hashes.SHA256()).hex(passwordForm.currentPassword),
-					hashedNewPassword: (new Hashes.SHA256()).hex(passwordForm.newPassword),
+					email: userObject.email,
+					hashedOriginalPassword: hashedOriginalPassword,
+					hashedNewPassword: hashedNewPassword,
 				})
 			});
 		}catch(err){
@@ -201,10 +231,15 @@ export default function Profile({
 			*/
 			const objectFromResponse = await response.json();
 			if(!(response.ok)){
-				setError(objectFromResponse.message ? objectFromResponse.message : "Received HTTP status " + response.status + " from server.");
+				setError(objectFromResponse.message ? objectFromResponse.message 
+									: "Received HTTP status " + response.status + " from server.");
 				return;
 			}
 			
+			setUserObject({
+				...userObject,
+				hashedPassword: hashedNewPassword,
+			});
 			setSuccess("Password changed successfully!");
     }catch (err){
 			//No catch for AbortError, React couldn't find its definition
@@ -239,11 +274,11 @@ export default function Profile({
                 <div className="flex flex-col items-center mb-4">
                   <div className="avatar mb-3">
                     <div className="w-24 rounded-full ring ring-orange-400 ring-offset-2">
-                      <img src={user?.profilePicture || "https://via.placeholder.com/150"} alt="Profile" />
+                      <img src={userObject.profilePictureURL || "https://via.placeholder.com/150"} alt="Profile" />
                     </div>
                   </div>
-                  <h3 className="font-bold text-lg">{user?.name}</h3>
-                  <p className="text-sm text-gray-500">{userEmail}</p>
+                  <h3 className="font-bold text-lg">{userObject.name}</h3>
+                  <p className="text-sm text-gray-500">{userObject.email}</p>
                 </div>
 
                 <ul className="menu p-0 bg-orange-500">
@@ -406,10 +441,10 @@ export default function Profile({
                             onClick={() => {
                               setEditMode(false);
                               setForm({
-                                name: user.name,
-                                email: userEmail,
-                                phone: user.phone || "",
-                                profilePicture: user.profilePicture || "",
+                                name: userObject.name,
+                                email: userObject.email,
+                                phone: userObject.phoneNumber || "",
+                                profilePicture: userObject.profilePictureURL || "",
                               });
                             }}
                           >
@@ -479,7 +514,7 @@ export default function Profile({
                 {activeTab === "wishlist" && (
                   <div>
                     <h2 className="text-2xl font-bold mb-6 bg-neutral ">My Wishlist</h2>
-                    {user?.wishlist?.length === 0 ? (
+                    {userObject.wishlist?.length === 0 ? (
                       <div className="text-center py-12">
                         <p className="text-gray-500">Your wishlist is empty</p>
                       </div>
@@ -496,7 +531,7 @@ export default function Profile({
                 {activeTab === "sold" && (
                   <div>
                     <h2 className="text-2xl font-bold bg-neutral mb-6">Items I've Sold</h2>
-                    {user?.soldItems?.length === 0 ? (
+                    {userObject.soldItems?.length === 0 ? (
                       <div className="text-center py-12">
                         <p className="bg-neutral text-gray-500">You haven't sold any items yet</p>
                       </div>
