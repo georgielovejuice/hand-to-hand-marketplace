@@ -1,45 +1,61 @@
-# Hand to Hand
+# Your Items (Backend – Seller CRUD)
 
-A web-based second-hand marketplace for KMITL students, staff, and lecturers.
+This part of the project handles **seller-owned item management**.
+It allows an authenticated user to create, view, update, and delete **only their own items** using JWT authentication.
 
-## Features
-- User registration & login
-- Post, edit, delete second-hand items
-- Browse, search, and filter items
-- Buyer–seller messaging
-- Offer, accept, reject, and hold mechanism
-- Admin moderation tools
+This README is for developers who want to understand **what is implemented and how to run it**.
 
-## Tech Stack
-- Frontend: React
-- Backend: Node.js + Express
-- Database: MongoDB
-- Authentication: JWT
+---
 
-## Team Roles
-- Project Manager
-- Frontend Developer
-- Backend Developer
-- Chat & Integration #NOT SURE
-- QA & Documentation #NOT SURE
-- 
-#what to start
-- Setting up what app can do (Use case)
-- Flow diagram + ER diagram (Database)
-- Work Flow (To show where does data flow?)
+## What This Does
 
-## Installation
-### Development
-- Do `npm install` in `/backend` and `/frontend`
-- Copy `databaseCredentials.js` to `/backend`
-- Test backend-database by running `node server.js TESTDB` and `node test_server.js` in parallel in `/backend`,
-  tests should pass
-- Spin up React server of frontend with `npm start` in `/frontend`
-- Run `node server.js` but without `TESTDB` to use actual database
-- Test by logging in with `corn` being the username and password
-- **To register a user, have the password to be the same as username
-  since the database stores the irrecoverable hash of the password**
-### Seeing the database
-- Install mongoDB Compass
-- Create a connection with `mongodb+srv://cookies:password@auctiondraftcluster.cmlfgox.mongodb.net/`,
-  where `cookies` is the database access username and `password` is the password
+- JWT-based authentication
+- Seller can only access **their own items**
+- Full CRUD operations on items
+- MongoDB-backed storage
+
+---
+
+## Item Structure
+
+Each item stored in MongoDB contains:
+
+- `name` (string)
+- `imageUrl` (string)
+- `price` (number)
+- `category` (array of strings)
+- `details` (string)
+- `ownerUsername` (string, from JWT)
+- `createdAt`
+- `updatedAt` (on edit)
+
+---
+
+## Authentication Flow
+
+1. User logs in via `/login`
+2. Backend returns a JWT token
+3. Token is sent in every request:
+- Authorization: Bearer <token>
+4. Backend verifies token
+5. Username is extracted from token
+6. All item operations are restricted to that username
+
+## API Endpoints
+
+### Login
+| Method | Endpoint | Description |
+|------|--------|------------|
+| GET | `/myitems` | Get logged-in user’s items |
+| POST | `/myitems` | Create a new item |
+| PUT | `/myitems/:id` | Update an item |
+| DELETE | `/myitems/:id` | Delete an item |
+
+## Project Setup
+
+### Backend
+
+```bash
+cd backend
+npm install
+node server.js
