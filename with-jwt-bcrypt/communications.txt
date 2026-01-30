@@ -1,0 +1,81 @@
+Base format for client to server:{
+	requestType: str,
+	[fields based on requestType]
+}
+
+ToClient.error:{
+	error: str 
+}
+
+Error reporting from server:
+	1. Specified JSON response form from server of a communication
+	2. ToClient.error for malformed JSON request from client for a communication
+	3. HTTP status 500 (Internal Server Error) if server encounters unexpected exception
+
+Attributes beyond the ones specified for a communication on both sides are ignored.
+
+
+Logging in:
+	To verify if user had entered valid credentials, the client sends:{
+		requestType: "validateCredentials",
+		username: str,
+		hashedPassword: str,
+	} with "Content-Type": "application/json" as one of the request headers.
+	
+	Server responds with{
+		validCredentials: "OK" | "Username not found." | "Invalid password." 
+	}
+	; or ToClient.error
+	; or HTTP status 500
+
+
+Registering:
+	To register a user, the client sends:{
+		requestType: "registerUser",
+		username: str,
+		fullname: str,
+		hashedPassword: str,
+	} with "Content-Type": "application/json" as one of the request headers.
+	
+	The server responds with 
+	{
+		registerUserStatus: "OK" | "Username already exists." | "Failed to write to database."
+	}
+	; or ToClient.Error
+	; or HTTP status 500
+	
+
+Querying Items in Browse Page:
+	To query, search or filter items, the client sends:{
+		requestType: "getItems",
+		searchBarText: str (64),
+		query: Object
+	} with "Content-Type": "application/json" as one of the request headers.
+	Where query is a mongoDB query, see docs of mongoDB on this
+	
+	The server responds with:
+	{
+		items = [
+			for an item:
+			{
+				name: str,
+				priceTHB: Number,
+				imageURL: str,
+				itemURL: str,
+				categories: Array(str),
+				details: str,
+			}
+			...(for other items)
+		]
+	}
+	; or ToClient.Error
+	; or HTTP status 500
+	
+
+Fetching resource from S3:
+	User sends GET 'http://localhost:5001/resource/[resourcename]'
+	The server responds with:
+	Response with binary of the requested resource
+	; or HTTP status 400 if resource corresponds to an archived S3 object
+	; or HTTP status 403 if resource does not exist in S3
+	; or HTTP status 500 for any undocumented exception caught
