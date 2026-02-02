@@ -124,7 +124,7 @@ export async function queryItems(parsedObject, itemCollection, response) {
     for (const c of item.categories) {
       if (typeof c !== "string") {
         invalidCategory = true;
-        break;
+        continue;
       }
     }
     if (invalidCategory) continue;

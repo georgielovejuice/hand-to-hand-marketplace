@@ -1,5 +1,4 @@
 import { useState } from "react";
-import Hashes from 'jshashes/hashes.js';
 
 export default function Login({
 	credentialsVerifierURL, 
@@ -19,7 +18,6 @@ export default function Login({
     setError("");
 
 		let response = null;
-		const hashedPassword = (new Hashes.SHA256()).hex(form.password.trim());
     try {
 			/*
 			Based on Window.fetch(), raises
@@ -39,7 +37,7 @@ export default function Login({
 				*/
 				body: JSON.stringify({
 					email: form.email.trim(),
-					password: hashedPassword
+					password: form.password.trim(),
 				})
 			});
 		}catch(err){
@@ -67,11 +65,10 @@ export default function Login({
 
 			const placeholderProfilePictureURL = "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"
 			setUserObject({
-				email: form.email,
-				hashedPassword: hashedPassword,
-				name: objectFromResponse.name || 'User',
-				profilePictureURL: objectFromResponse.profilePicture || placeholderProfilePictureURL,
-				phoneNumber: objectFromResponse.phone || ''
+				token: objectFromResponse.token,
+				name: objectFromResponse.safeUser.name || 'User',
+				profilePictureURL: objectFromResponse.safeUser.profilePicture || placeholderProfilePictureURL,
+				phoneNumber: objectFromResponse.safeUser.phone || ''
 			});
 
 			redirectToHome();

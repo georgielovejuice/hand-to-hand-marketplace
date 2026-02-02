@@ -79,9 +79,6 @@ export default function BrowsePage({apiURL}){
 				}else if(typeof item.imageURL !== "string"){
 					setErrorMessage("imageURL attribute of item is not string type. Ignored item...");
 					continue;
-				}else if(typeof item.itemURL !== "string"){
-					setErrorMessage("itemURL attribute of item is not string type. Ignored item...");
-					continue;
 				}else if(!(item.categories instanceof Array)){
 					setErrorMessage("categories attribute of item is not String type. Ignored attribute.");
 					item.categories = [];

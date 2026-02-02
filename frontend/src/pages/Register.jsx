@@ -3,9 +3,7 @@ import Hashes from 'jshashes/hashes.js';
 
 export default function Register({
 	registrationURL, 
-	redirectToLogin, 
-	redirectToHome,
-	setUserObject,
+	redirectToLogin
 }){
   const [form, setForm] = useState({
     name: "",
@@ -23,7 +21,6 @@ export default function Register({
 		let response = null;
 		const trimmedEmail = form.email.trim();
 		const trimmedName = form.name.trim();
-		const hashedPassword = (new Hashes.SHA256()).hex(form.password.trim());
     try {
 			/*
 			Based on Window.fetch(), raises
@@ -46,7 +43,7 @@ export default function Register({
 				body: JSON.stringify({
 					name: trimmedName,
 					email: trimmedEmail,
-					password: hashedPassword
+					password: form.password.trim()
 				}),
 			});
 		}catch(err){
@@ -56,8 +53,19 @@ export default function Register({
 			setLoading(false);
 			return;
 		}
+
+		if(response.ok){
+			redirectToLogin();
+			return;
+		}
 			
 		try{
+			//404 returns HTML page which isn't json and response.json cannot parse it.
+			if(response.status === 404){
+				setError("API endpoint " + registrationURL + " not found.");
+				return;
+			}
+			
 			/*
 			Raises
 			- AbortError if abort() is called
@@ -66,20 +74,8 @@ export default function Register({
 			- something from await
 			*/
 			const objectFromResponse = await response.json();
-			
-			if(response.ok){
-				const placeholderProfilePictureURL = "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg";
-				setUserObject({
-					email: trimmedEmail,
-					hashedPassword: hashedPassword,
-					name: trimmedName,
-					profilePictureURL: objectFromResponse.profilePicture || placeholderProfilePictureURL,
-					phoneNumber: objectFromResponse.phone || ''
-				});
-				redirectToHome();
-			}
-			else setError(objectFromResponse.message ? objectFromResponse.message 
-										: "Received HTTP status " + response.status + " from server.");
+			setError(objectFromResponse.message ? objectFromResponse.message 
+								: "Received HTTP status " + response.status + " from server.");
     } catch (err) {
 			//No catch for AbortError, React couldn't find its definition
 			if(err instanceof TypeError) setError("Couldn't decode response body from server.");		

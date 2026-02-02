@@ -30,14 +30,14 @@ export default function myItemsRoute(getDB) {
       return res.status(401).json({ error: "Missing credentials" });
     }
 
-    const { name, imageUrl, price, category, details } = req.body;
+    const { name, imageURL, priceTHB, categories, details } = req.body;
     const db = getDB();
 
     await db.collection("Item").insertOne({
       name,
-      imageUrl,
-      price,
-      category,
+      imageURL,
+      priceTHB,
+      categories,
       details,
       ownerId: req.user.userId,
       createdAt: new Date()

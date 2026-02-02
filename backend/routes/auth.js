@@ -73,8 +73,7 @@ router.post("/login", async (req, res) => {
     const { hashedPassword, ...safeUser } = user;
 
     res.json({
-      token,
-      user: safeUser
+      token, safeUser
     });
 
   } catch (err) {

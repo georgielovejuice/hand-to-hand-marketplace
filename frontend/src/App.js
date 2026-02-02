@@ -2,6 +2,8 @@ import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import Profile from './pages/Profile.jsx';
 import BrowsePage from './BrowsePage.js';
+import MyItems from './pages/MyItems.js';
+
 import HomeTab from './HomeTab.js';
 
 import './App.css';
@@ -12,8 +14,7 @@ function App() {
 	
 	const [currentPage, setCurrentPage] = useState('Login');
 	const [userObject, setUserObject] = useState({
-		email: '',
-		hashedPassword: '',
+		token: '',
 		name: '',
 		profilePictureURL: '',
 		phoneNumber: '',
@@ -33,13 +34,14 @@ function App() {
 		case('Register'):
 			displayPage = <Register
 				registrationURL={apiURL + '/auth/register'} 
-				redirectToHome={() => {setCurrentPage('Browse')}} 
 				redirectToLogin={() => {setCurrentPage('Login')}}	
-				setUserObject={setUserObject}
 			/>;
 			break;
 		case('Browse'):
 			displayPage = <BrowsePage apiURL={apiURL}/>
+			break;
+		case('My Items'):
+			displayPage = <MyItems token={userObject.token} API_URL={apiURL}/>
 			break;
 		case('Your Page'):
 			displayPage = <Profile

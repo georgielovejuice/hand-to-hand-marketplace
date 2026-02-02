@@ -93,8 +93,8 @@ async function main(){
 	await mongoClient.connect();
 	app.use("/api/profile", profileRouter);
 	app.use("/api/auth", authRouter);
-	app.use("/myitems", myItemsRoute(() => mongoClient.db("Item")));
-	console.log("Server is listening to: https://localhost:" + serverPortNumber);
+	app.use("/api/myitems", myItemsRoute(() => mongoClient.db("Item")));
+	console.log("Server is listening to: http://localhost:" + serverPortNumber);
 	app.listen(serverPortNumber);
 }
 main();

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import Hashes from 'jshashes/hashes.js';
 
 export default function Profile({
 	profileAPIURL,
@@ -44,8 +43,7 @@ export default function Profile({
 				method: "GET",
 				headers: {
 					"Content-Type": "application/json",
-					email: userObject.email,
-					hashedPassword: userObject.hashedPassword,
+					authorization: userObject.token,
 				}
 			});
 		}catch(err){
@@ -118,17 +116,17 @@ export default function Profile({
 			*/
       response = await fetch(profileAPIURL, {
 				method: "PUT",
-				headers: {"Content-Type": "application/json"},
+				headers: {
+					"Content-Type": "application/json",
+					authorization: userObject.token,
+				},
 				/*
 					Raises TypeError if the parameter object has a circular reference 
 					or BigInt value is in the parameter object
 				*/
-				body: JSON.stringify({
-					originalEmail: userObject.email,
-					hashedPassword: userObject.hashedPassword,
-					
+				body: JSON.stringify({					
 					name: trimmedName,
-					newEmail: trimmedEmail,
+					email: trimmedEmail,
 					phone: trimmedPhoneNumber,
 					profilePicture: trimmedProfilePictureURL
 				})
@@ -187,8 +185,6 @@ export default function Profile({
       return;
     }
 
-		const hashedOriginalPassword = (new Hashes.SHA256()).hex(trimmedCurrentPassword);
-		const hashedNewPassword = (new Hashes.SHA256()).hex(trimmedNewPassword);
 		let response = null;
     try {
 			/*
@@ -202,15 +198,18 @@ export default function Profile({
 			*/
       response = await fetch(changePasswordAPIURL, {
 				method: "PUT",
-				headers: {"Content-Type": "application/json"},
+				headers: {
+					"Content-Type": "application/json",
+					authorization: userObject.token,
+				},
 				/*
 					Raises TypeError if the parameter object has a circular reference 
 					or BigInt value is in the parameter object
 				*/
 				body: JSON.stringify({
 					email: userObject.email,
-					hashedOriginalPassword: hashedOriginalPassword,
-					hashedNewPassword: hashedNewPassword,
+					currentPassword: trimmedCurrentPassword,
+					newPassword: trimmedNewPassword,
 				})
 			});
 		}catch(err){
@@ -235,11 +234,7 @@ export default function Profile({
 									: "Received HTTP status " + response.status + " from server.");
 				return;
 			}
-			
-			setUserObject({
-				...userObject,
-				hashedPassword: hashedNewPassword,
-			});
+
 			setSuccess("Password changed successfully!");
     }catch (err){
 			//No catch for AbortError, React couldn't find its definition

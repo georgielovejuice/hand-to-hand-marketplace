@@ -29,9 +29,11 @@ router.put("/", verifyToken, async (req, res) => {
   try {
     const userCollection = mongoClient.db("User").collection("User");
     const { name, email, phone, profilePicture } = req.body;
+		const emailFromJWT = req.user.email;
 
     // email collision check
-    if (email) {
+		const wantsToChangeEmail = emailFromJWT !== email;
+    if (wantsToChangeEmail) {
       const exists = await userCollection.findOne({
         email,
         _id: { $ne: new ObjectId(req.user.userId) }
@@ -73,7 +75,7 @@ router.put("/password", verifyToken, async (req, res) => {
     const user = await userCollection.findOne({
       _id: new ObjectId(req.user.userId)
     });
-
+	
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const isMatch = await bcrypt.compare(currentPassword, user.hashedPassword);
