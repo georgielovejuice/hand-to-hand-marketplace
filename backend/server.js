@@ -22,6 +22,7 @@ app.use(express.json());
 app.use(CrossOrginResourceSharing());
 
 app.post('/api', async (request, response) => {		
+	//Will change this to regular endpoint if there's time
 	const userDatabase = mongoClient.db("User");
 	const userCollection = userDatabase.collection("User");
 	const ItemDatabase = mongoClient.db("Item");
@@ -35,13 +36,6 @@ app.post('/api', async (request, response) => {
 			throw new SyntaxError("JSON has invalid type for requestType field.");
 
 		switch(parsedObject.requestType){
-			/*
-				Insert your method to handle a request type and its switch-case here.
-				The method has to check and give feedback if parsedObject for a request type is malformed,
-				just throw a SyntaxError so this try-catch responds to the client for malformed JSON for a request.
-				Anything logic error report like incorrect username should be in the response type for a request type.
-				Programmer errors and undocumented errors should not be caught by the method and instead caught by this function
-			*/
 			case("getItems"):
 				await queryItems(parsedObject, itemCollection, response);
 				break;

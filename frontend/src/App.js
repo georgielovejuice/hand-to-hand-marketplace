@@ -1,7 +1,7 @@
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import Profile from './pages/Profile.jsx';
-import BrowsePage from './BrowsePage.js';
+import BrowsePage from './pages/BrowsePage.js';
 import MyItems from './pages/MyItems.js';
 
 import HomeTab from './HomeTab.js';

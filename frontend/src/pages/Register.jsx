@@ -1,5 +1,4 @@
 import { useState } from "react";
-import Hashes from 'jshashes/hashes.js';
 
 export default function Register({
 	registrationURL, 

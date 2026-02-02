@@ -1,7 +1,7 @@
 import {SearchBar, Item} from './BrowsePageComponents.js'
 
 import {useState, useEffect} from 'react'
-import {requestServerService} from './utils.js'
+import {requestServerService} from './BrowsePage_api.js'
 
 //May throw undocumented exceptions
 export default function BrowsePage({apiURL}){
