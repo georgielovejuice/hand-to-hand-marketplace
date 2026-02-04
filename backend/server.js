@@ -1,32 +1,13 @@
-const {validateCredentials, registerUser, queryItems} = require('./api_methods.js');
-const {databaseUsername, 
-	databasePassword, 
-	storageRegion,
-	storageKeyId,
-	storageSecretAccessKey,
-	storageBucketName,
-} = require('./backendCredentials.js');
+import {queryItems} from './api_methods.js';
+import {storageRegion, storageKeyId, storageSecretAccessKey, storageBucketName} from './backendCredentials.js';
+import mongoClient from './database.js';
+import authRouter from './routes/auth.js';
+import profileRouter from './routes/profile.js';
+import myItemsRoute from "./routes/myItems.js";
 
-const express = require('express');
-const CrossOriginResourceSharing = require('cors');
-const {MongoClient, ServerApiVersion} = require("mongodb");
-const { S3Client, GetObjectCommand, InvalidObjectState, NoSuchKey, S3ServiceException} = require('@aws-sdk/client-s3');
-
-const {argv} = require('node:process');
-
-
-const hasProcessArguments = argv.length > 2;
-const useTestingDatabase = argv[2] == "TESTDB";
-if(useTestingDatabase) console.log("\tUsing test database...");
-
-const databaseURL = "mongodb+srv://" + databaseUsername + ":" + databasePassword + "@auctiondraftcluster.cmlfgox.mongodb.net/";
-const mongoClient = new MongoClient(databaseURL, {
-	serverApi: {
-		version: ServerApiVersion.v1,
-		strict: true,
-		deprecationErrors: true,
-	}
-});
+import express from 'express';
+import CrossOrginResourceSharing from 'cors';
+import {S3Client, GetObjectCommand, InvalidObjectState, NoSuchKey, S3ServiceException} from '@aws-sdk/client-s3';
 
 const storageClient = new S3Client({
 	region: storageRegion,
@@ -36,18 +17,15 @@ const storageClient = new S3Client({
 	}
 });
 
-const serverPortNumber = 5001;
-const userDatabaseName = useTestingDatabase ? "UserTest" : "User";
-const itemDatabaseName = useTestingDatabase ? "ItemTest" : "Item";
-
 const app = express();
 app.use(express.json());
-app.use(CrossOriginResourceSharing());
+app.use(CrossOrginResourceSharing());
 
 app.post('/api', async (request, response) => {		
-	const userDatabase = mongoClient.db(userDatabaseName);
+	//Will change this to regular endpoint if there's time
+	const userDatabase = mongoClient.db("User");
 	const userCollection = userDatabase.collection("User");
-	const ItemDatabase = mongoClient.db(itemDatabaseName);
+	const ItemDatabase = mongoClient.db("Item");
 	const itemCollection = ItemDatabase.collection("Item");
 
 	try{
@@ -58,19 +36,6 @@ app.post('/api', async (request, response) => {
 			throw new SyntaxError("JSON has invalid type for requestType field.");
 
 		switch(parsedObject.requestType){
-			/*
-				Insert your method to handle a request type and its switch-case here.
-				The method has to check and give feedback if parsedObject for a request type is malformed,
-				just throw a SyntaxError so this try-catch responds to the client for malformed JSON for a request.
-				Anything logic error report like incorrect username should be in the response type for a request type.
-				Programmer errors and undocumented errors should not be caught by the method and instead caught by this function
-			*/
-			case("validateCredentials"):
-				await validateCredentials(parsedObject, userCollection, response);
-				break;
-			case("registerUser"): 
-				await registerUser(parsedObject, userCollection, response);
-				break;
 			case("getItems"):
 				await queryItems(parsedObject, itemCollection, response);
 				break;
@@ -118,8 +83,12 @@ app.get('/resource/:resourcename', async (request, response) => {
 
 
 async function main(){
+	const serverPortNumber = 5001;
 	await mongoClient.connect();
-	console.log("Server is listening to: https://localhost:" + serverPortNumber);
+	app.use("/api/profile", profileRouter);
+	app.use("/api/auth", authRouter);
+	app.use("/api/myitems", myItemsRoute(() => mongoClient.db("Item")));
+	console.log("Server is listening to: http://localhost:" + serverPortNumber);
 	app.listen(serverPortNumber);
 }
 main();

@@ -1,7 +1,10 @@
-import LoginPage from './LoginPage.js';
-import RegisterPage from './RegisterPage.js';
-import YourPage from './YourPage.js'
-import BrowsePage from './BrowsePage.js'
+import Login from './pages/Login.jsx';
+import Register from './pages/Register.jsx';
+import Profile from './pages/Profile.jsx';
+import BrowsePage from './pages/BrowsePage.js';
+import MyItems from './pages/MyItems.js';
+
+import HomeTab from './HomeTab.js';
 
 import './App.css';
 import {useState} from 'react';
@@ -10,50 +13,42 @@ function App() {
 	const apiURL = "http://localhost:5001/api";
 	
 	const [currentPage, setCurrentPage] = useState('Login');
-	const [username, setUsername] = useState(null);
-	const [hashedPassword, setHashedPassword] = useState(null);	
-	
-	function PageTabs(){
-		return(
-			<div>
-				<button onClick={() => {setCurrentPage('Browse');}}>Browse</button>
-				<button onClick={() => {setCurrentPage('Chat');}}>Chat</button>
-				<button onClick={() => {setCurrentPage('Your Items');}}>Your items</button>	
-				<button onClick={() => {setCurrentPage("Your Page");}}>{username}</button>								
-			</div>
-		);
-	}
+	const [userObject, setUserObject] = useState({
+		token: '',
+		name: '',
+		profilePictureURL: '',
+		phoneNumber: '',
+	});
+	const [errorMessage, setErrorMessage] = useState('');
 	
 	let displayPage = null;
 	switch(currentPage){
 		case('Login'):
-			displayPage = <LoginPage 
-				apiURL={apiURL} 
+			displayPage = <Login
+				credentialsVerifierURL={apiURL + '/auth/login'} 
 				redirectToHome={() => setCurrentPage('Browse')} 
 				redirectToRegister={() => setCurrentPage('Register')}
-				setUsername={setUsername}
-				setHashedPassword={setHashedPassword}
+				setUserObject={setUserObject}
 			/>;
 			break;
 		case('Register'):
-			displayPage = <RegisterPage 
-				apiURL={apiURL} 
-				redirectToHome={() => {setCurrentPage('Browse')}} 
-				redirectToLogin={() => {setCurrentPage('Login')}}
-				setUsername={setUsername}
-				setHashedPassword={setHashedPassword}				
+			displayPage = <Register
+				registrationURL={apiURL + '/auth/register'} 
+				redirectToLogin={() => {setCurrentPage('Login')}}	
 			/>;
 			break;
 		case('Browse'):
 			displayPage = <BrowsePage apiURL={apiURL}/>
 			break;
+		case('My Items'):
+			displayPage = <MyItems token={userObject.token} API_URL={apiURL}/>
+			break;
 		case('Your Page'):
-			displayPage = <YourPage
-				redirectToHome={() => {setCurrentPage("Browse");}}
-				redirectToLogin={() => {setCurrentPage("Login");}}
-				username={username}
-				clearUsername={() => {setUsername(null);}}
-				clearHashedPassword={() => {setHashedPassword(null);}}
+			displayPage = <Profile
+				profileAPIURL={apiURL + '/profile'}
+				changePasswordAPIURL={apiURL + '/profile/password'}
+				userObject={userObject}
+				setUserObject={setUserObject}
 			/>
 			break;
 		default: 
@@ -67,7 +62,20 @@ function App() {
 	
   return (
     <div>
-		{pagesWithoutPageTabs.includes(currentPage) ? null : <PageTabs/>}
+		{
+			pagesWithoutPageTabs.includes(currentPage) ? null : <HomeTab
+				redirectToBrowsePage={() => setCurrentPage('Browse')}
+				redirectToChatsPage={() => setCurrentPage('Chats')}
+				redirectToMyListingsPage={() => setCurrentPage('My Items')}
+				redirectToProfilePage={() => setCurrentPage('Your Page')}
+				username={userObject.name}
+				userProfilePictureURL={userObject.profilePictureURL}
+				logout={() => {
+					setUserObject(null);
+					setCurrentPage('Login');
+				}}
+			/>
+		}
 		{displayPage}
     </div>
   );
