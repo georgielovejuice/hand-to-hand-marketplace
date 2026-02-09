@@ -1,0 +1,226 @@
+@startuml Hand_to_Hand_Marketplace_ER
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam classBackgroundColor #F0F0F0
+skinparam classBorderColor #333333
+skinparam classArrowColor #333333
+skinparam defaultFontName Arial
+
+title Hand to Hand Marketplace - ER Diagram
+subtitle MongoDB Database Schema
+
+' ========== ENTITIES ==========
+
+entity USER {
+  * _id : ObjectId <<PK>>
+  --
+  * name : String
+  * email : String <<UK>>
+  * hashedPassword : String
+  phone : String
+  profilePicture : String
+  role : String [user|admin|moderator]
+  address : String
+  location : String
+  isVerified : Boolean
+  isBanned : Boolean
+  banReason : String
+  totalItemsSold : Integer
+  totalItemsBought : Integer
+  averageRating : Float
+  createdAt : DateTime
+  updatedAt : DateTime
+  deletedAt : DateTime [soft delete]
+}
+
+entity CATEGORY {
+  * _id : ObjectId <<PK>>
+  --
+  * name : String <<UK>>
+  description : String
+  icon : String [emoji|URL]
+  isActive : Boolean
+  createdAt : DateTime
+  updatedAt : DateTime
+}
+
+entity ITEM {
+  * _id : ObjectId <<PK>>
+  --
+  * name : String
+  * description : String
+  * price : Float [THB]
+  currency : String [default: THB]
+  * categoryIds : Array[ObjectId] <<FK>>
+  tags : Array[String]
+  images : Array[String]
+  primaryImageURL : String
+  status : String [available|sold|delisted]
+  visibility : String [public|private|draft]
+  * ownerId : ObjectId <<FK>>
+  views : Integer
+  lastViewedAt : DateTime
+  condition : Integer [1-5 stars]
+  createdAt : DateTime
+  updatedAt : DateTime
+  deletedAt : DateTime [soft delete]
+}
+
+entity OFFER {
+  * _id : ObjectId <<PK>>
+  --
+  * itemId : ObjectId <<FK>>
+  * buyerId : ObjectId <<FK>>
+  * sellerId : ObjectId <<FK>>
+  * proposedPrice : Float
+  currency : String
+  status : String [pending|accepted|rejected|held|cancelled]
+  statusUpdatedAt : DateTime
+  expiresAt : DateTime
+  acceptedAt : DateTime
+  rejectedAt : DateTime
+  buyerMessage : String
+  sellerResponse : String
+  createdAt : DateTime
+  updatedAt : DateTime
+}
+
+entity MESSAGE {
+  * _id : ObjectId <<PK>>
+  --
+  * itemId : ObjectId <<FK>>
+  offerId : ObjectId <<FK>> [optional]
+  * senderId : ObjectId <<FK>>
+  * receiverId : ObjectId <<FK>>
+  * content : String
+  contentType : String [text|image|file]
+  attachmentURL : String
+  isRead : Boolean
+  readAt : DateTime
+  createdAt : DateTime
+  updatedAt : DateTime
+  deletedAt : DateTime [soft delete]
+}
+
+entity WISHLIST {
+  * _id : ObjectId <<PK>>
+  --
+  * userId : ObjectId <<FK>>
+  * itemId : ObjectId <<FK>>
+  addedAt : DateTime
+}
+
+entity AUDITLOG {
+  * _id : ObjectId <<PK>>
+  --
+  * actionType : String [item_deleted|user_banned|etc]
+  performedBy : ObjectId <<FK>>
+  targetUserId : ObjectId <<FK>> [optional]
+  targetItemId : ObjectId <<FK>> [optional]
+  targetOfferId : ObjectId <<FK>> [optional]
+  reason : String
+  details : JSON
+  createdAt : DateTime
+}
+
+entity NOTIFICATION {
+  * _id : ObjectId <<PK>>
+  --
+  * userId : ObjectId <<FK>>
+  * type : String [offer_received|message_new|item_sold]
+  relatedItemId : ObjectId <<FK>> [optional]
+  relatedOfferId : ObjectId <<FK>> [optional]
+  relatedUserId : ObjectId <<FK>> [optional]
+  * title : String
+  message : String
+  isRead : Boolean
+  readAt : DateTime
+  createdAt : DateTime
+}
+
+' ========== RELATIONSHIPS ==========
+
+' User relationships
+USER ||--o{ ITEM : "owns"
+USER ||--o{ OFFER : "makes\n(as buyer)"
+USER ||--o{ MESSAGE : "sends"
+USER ||--o{ MESSAGE : "receives"
+USER ||--o{ WISHLIST : "saves"
+USER ||--o{ AUDITLOG : "performs"
+USER ||--o{ NOTIFICATION : "receives"
+
+' Item relationships
+ITEM ||--o{ OFFER : "receives"
+ITEM ||--o{ MESSAGE : "discussed in"
+ITEM ||--o{ WISHLIST : "added to"
+ITEM }o--|| CATEGORY : "belongs to"
+
+' Offer relationships
+OFFER ||--o{ MESSAGE : "negotiates via"
+OFFER }o--|| USER : "to (seller)"
+
+' Notification relationships
+NOTIFICATION }o--|| OFFER : "notifies about"
+NOTIFICATION }o--|| ITEM : "related to"
+
+' AuditLog relationships
+AUDITLOG }o--|| OFFER : "targets"
+AUDITLOG }o--|| ITEM : "targets"
+
+note right of USER
+  Core user data with role-based access
+  Supports seller ratings and statistics
+  Soft-delete via isBanned flag
+end note
+
+note right of ITEM
+  Comprehensive item listing with:
+  - Multiple image support
+  - Category and tag support
+  - Condition rating (1-5 stars)
+  - Analytics (views, engagement)
+end note
+
+note right of OFFER
+  Offer negotiation lifecycle:
+  pending → accepted/rejected/held
+  Supports optional expiration
+  Message support for negotiation
+end note
+
+note right of MESSAGE
+  Real-time messaging system:
+  - Per-item conversations
+  - Optional offer-specific discussion
+  - Read status tracking
+  - Soft-delete for privacy
+end note
+
+note right of WISHLIST
+  User wishlist functionality
+  Tracks which items users saved
+  Supports future analytics
+end note
+
+note right of AUDITLOG
+  Admin audit trail for:
+  - Compliance & accountability
+  - Moderation tracking
+  - System events logging
+end note
+
+note right of NOTIFICATION
+  Push notification system:
+  - Offer-related alerts
+  - Message notifications
+  - Item status updates
+  - Ready for Socket.io integration
+end note
+
+note right of CATEGORY
+  Centralized category management
+  Supports filtering and discovery
+  Flexible icon system
+end note
+
+@enduml

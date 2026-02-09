@@ -1,0 +1,290 @@
+// Hand to Hand Marketplace - ER Diagram
+// Database: MongoDB (NoSQL - Document Model)
+// Convention: DBML format with MongoDB document structure
+// Design Focus: Scalability, future-proofing, and proper normalization
+// Last Updated: Feb 2026
+
+Table User {
+  _id ObjectId [primary key]
+  name String [not null]
+  email String [unique, not null]
+  hashedPassword String [not null]
+  phone String
+  profilePicture String
+  role String [note: "user, admin, moderator", default: "user"]
+  
+  // Optional contact fields for better seller profiles
+  address String [note: "delivery location"]
+  location String [note: "city/area for local marketplace"]
+  
+  // Admin/moderation fields
+  isVerified Boolean [default: false]
+  isBanned Boolean [default: false, note: "soft-delete via flag"]
+  banReason String
+  
+  // Statistics for future features
+  totalItemsSold Int [default: 0]
+  totalItemsBought Int [default: 0]
+  averageRating Float [note: "future feature"]
+  
+  // Timestamps
+  createdAt DateTime [not null]
+  updatedAt DateTime
+  deletedAt DateTime [note: "soft delete"]
+  
+  indexes {
+    email [unique]
+    role
+    isBanned
+  }
+  
+  Note: "Core user data with role-based access and soft-delete support"
+}
+
+Table Category {
+  _id ObjectId [primary key]
+  name String [unique, not null]
+  description String
+  icon String [note: "emoji or image URL"]
+  isActive Boolean [default: true]
+  
+  createdAt DateTime [not null]
+  updatedAt DateTime
+  
+  indexes {
+    name
+    isActive
+  }
+  
+  Note: "Centralized categories - better for filtering and future feature expansion"
+}
+
+Table Item {
+  _id ObjectId [primary key]
+  
+  // Basic info
+  name String [not null]
+  description String [not null]
+  price Float [not null, note: "in THB"]
+  currency String [default: "THB", note: "future internationalization"]
+  
+  // Categories and tags
+  categoryIds Array<ObjectId> [ref: - Category._id, not null]
+  tags Array<String> [note: "user-defined tags for better search"]
+  
+  // Media - supports multiple images in future
+  images Array<String> [note: "array of imageURLs for scalability"]
+  primaryImageURL String [note: "first image for quick display"]
+  
+  // Status and visibility
+  status String [note: "available, sold, delisted", default: "available"]
+  visibility String [note: "public, private, draft", default: "public"]
+  
+  // Seller reference
+  ownerId ObjectId [ref: > User._id, not null]
+  
+  // Metadata for future analytics
+  views Int [default: 0]
+  lastViewedAt DateTime [note: "engagement tracking"]
+  
+  // Condition (future feature)
+  condition Int [note: 5, 4, 3, 2, 1]
+  
+  createdAt DateTime [not null]
+  updatedAt DateTime
+  deletedAt DateTime [note: "soft delete"]
+  
+  indexes {
+    ownerId
+    status
+    visibility
+    categoryIds
+    createdAt [desc]
+  }
+  
+  Note: "Comprehensive item listing with future-proof design for multiple images, categories, and analytics"
+}
+
+Table Offer {
+  _id ObjectId [primary key]
+  
+  // References
+  itemId ObjectId [ref: > Item._id, not null]
+  buyerId ObjectId [ref: > User._id, not null]
+  sellerId ObjectId [ref: > User._id, not null]
+  
+  // Offer details
+  proposedPrice Float [not null]
+  currency String [default: "THB"]
+  
+  // Status lifecycle
+  status String [note: "pending, accepted, rejected, held, cancelled", default: "pending"]
+  statusUpdatedAt DateTime
+  
+  // Timeline
+  expiresAt DateTime [note: "optional expiration for pending offers"]
+  acceptedAt DateTime
+  rejectedAt DateTime
+  
+  // Notes
+  buyerMessage String [note: "buyer notes with offer"]
+  sellerResponse String [note: "optional seller message"]
+  
+  createdAt DateTime [not null]
+  updatedAt DateTime
+  
+  indexes {
+    itemId
+    buyerId
+    sellerId
+    status
+    createdAt [desc]
+  }
+  
+  Note: "Offer negotiation system with status tracking and message support"
+}
+
+Table Message {
+  _id ObjectId [primary key]
+  
+  // Conversation context
+  itemId ObjectId [ref: > Item._id, not null]
+  offerId ObjectId [ref: > Offer._id, note: "optional - null if general chat"]
+  
+  // Participants
+  senderId ObjectId [ref: > User._id, not null]
+  receiverId ObjectId [ref: > User._id, not null]
+  
+  // Content and metadata
+  content String [not null]
+  contentType String [note: "text, image, file", default: "text"]
+  attachmentURL String [note: "for images or files"]
+  
+  // Read status
+  isRead Boolean [default: false]
+  readAt DateTime
+  
+  createdAt DateTime [not null]
+  updatedAt DateTime [note: "for edited messages in future"]
+  deletedAt DateTime [note: "soft delete"]
+  
+  indexes {
+    itemId
+    offerId
+    senderId
+    receiverId
+    createdAt [desc]
+  }
+  
+  Note: "Messaging with read status and attachment support for future enhancements"
+}
+
+Table Wishlist {
+  _id ObjectId [primary key]
+  
+  userId ObjectId [ref: > User._id, not null]
+  itemId ObjectId [ref: > Item._id, not null]
+  
+  addedAt DateTime [not null]
+  
+  indexes {
+    userId
+    itemId [unique: true, with userId]
+  }
+  
+  Note: "User wishlist - mentioned in your Profile component, now formally included"
+}
+
+Table AuditLog {
+  _id ObjectId [primary key]
+  
+  // Action details
+  actionType String [note: "item_deleted, user_banned, offer_accepted"]
+  performedBy ObjectId [ref: > User._id]
+  targetUserId ObjectId [ref: > User._id, note: "if action targets a user"]
+  targetItemId ObjectId [ref: > Item._id, note: "if action targets an item"]
+  targetOfferId ObjectId [ref: > Offer._id, note: "if action targets an offer"]
+  
+  // Context
+  reason String [note: "why action was taken"]
+  details Json [note: "flexible metadata"]
+  
+  createdAt DateTime [not null]
+  
+  indexes {
+    performedBy
+    targetUserId
+    actionType
+    createdAt [desc]
+  }
+  
+  Note: "Admin audit trail for compliance, moderation tracking, and accountability"
+}
+
+Table Notification {
+  _id ObjectId [primary key]
+  
+  userId ObjectId [ref: > User._id, not null]
+  
+  // Notification types
+  type String [note: "offer_received, offer_accepted, message_new, item_sold"]
+  relatedItemId ObjectId [ref: > Item._id]
+  relatedOfferId ObjectId [ref: > Offer._id]
+  relatedUserId ObjectId [ref: > User._id]
+  
+  title String [not null]
+  message String
+  
+  // Status
+  isRead Boolean [default: false]
+  readAt DateTime
+  
+  createdAt DateTime [not null]
+  
+  indexes {
+    userId
+    isRead
+    createdAt [desc]
+  }
+  
+  Note: "Notification system for future real-time updates and user engagement"
+}
+
+// ==================== RELATIONSHIPS ====================
+// User -> Item (One-to-Many): Owner posts multiple items
+// User -> Offer (One-to-Many as buyer): Makes multiple offers
+// User -> Offer (One-to-Many as seller): Receives multiple offers
+// User -> Message (One-to-Many): Sends/receives messages
+// User -> Wishlist (One-to-Many): Saves multiple items
+// User -> AuditLog (One-to-Many): Admin actions logged
+// User -> Notification (One-to-Many): Receives notifications
+// 
+// Item -> Category (Many-to-Many via categoryIds): Can have multiple categories
+// Item -> Offer (One-to-Many): Multiple offers per item
+// Item -> Message (One-to-Many): Messages discussing item
+// Item -> Wishlist (One-to-Many): Multiple users wishlist item
+//
+// Offer -> Message (One-to-Many): Multiple messages during negotiation
+//
+// ==================== DESIGN NOTES ====================
+// ✓ Soft deletes (deletedAt flag) instead of hard deletes for data integrity
+// ✓ Centralized Category collection for better normalization and filtering
+// ✓ Role-based access control (role field in User)
+// ✓ Audit logging for admin actions and compliance
+// ✓ Wishlist collection (from your Profile.jsx code)
+// ✓ Notification system ready for future Socket.io integration
+// ✓ Arrays for tags/images support future expansion without schema migration
+// ✓ Proper indexing on frequently queried fields for performance
+// ✓ Status fields support enum-like behavior (MongoDB style)
+// ✓ Optional fields (address, location) ready for geo-features
+// ✓ Read status tracking in messages for UX enhancement
+// ✓ Expiration dates on offers for marketplace dynamics
+//
+// ==================== FUTURE ENHANCEMENTS READY ====================
+// ⚡ Reviews & Ratings: Add Review collection with userId, targetUserId, itemId, rating, comment
+// ⚡ Transactions/Payments: Add Transaction collection with buyer, seller, amount, status
+// ⚡ Geo-search: Use location field + MongoDB geospatial indexes
+// ⚡ Real-time notifications: AuditLog and Notification are ready for Socket.io
+// ⚡ Image storage: images array supports CDN integration
+// ⚡ Analytics: views counter and statistics fields in User/Item
+// ⚡ Multi-currency: currency field ready for internationalization
