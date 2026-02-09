@@ -3,6 +3,7 @@ import Register from './pages/Register.jsx';
 import Profile from './pages/Profile.jsx';
 import BrowsePage from './pages/BrowsePage.js';
 import MyItems from './pages/MyItems.js';
+import ItemPage from './pages/ItemPage.js';
 
 import HomeTab from './HomeTab.js';
 
@@ -19,7 +20,7 @@ function App() {
 		profilePictureURL: '',
 		phoneNumber: '',
 	});
-	const [errorMessage, setErrorMessage] = useState('');
+	const [viewingItemID, setViewingItemID] = useState(null);
 	
 	let displayPage = null;
 	switch(currentPage){
@@ -38,7 +39,10 @@ function App() {
 			/>;
 			break;
 		case('Browse'):
-			displayPage = <BrowsePage apiURL={apiURL}/>
+			displayPage = <BrowsePage 
+				apiURL={apiURL}
+				setViewingItemID={(itemID) => {setCurrentPage("Item"); setViewingItemID(itemID);}}
+			/>
 			break;
 		case('My Items'):
 			displayPage = <MyItems token={userObject.token} API_URL={apiURL}/>
@@ -50,6 +54,18 @@ function App() {
 				userObject={userObject}
 				setUserObject={setUserObject}
 			/>
+			break;
+		case('Item'):
+			displayPage = <ItemPage
+				itemAPIURL={apiURL + '/myitems/' + viewingItemID}
+				JWTToken={userObject.token}
+				redirectToChatPage={() => {setCurrentPage('Chat');}}
+			/>
+			break;
+		case('Chat'):
+			displayPage = <div>
+				<h2>Chat with item ID: {viewingItemID}</h2>
+			</div>
 			break;
 		default: 
 			displayPage = <div>

@@ -65,7 +65,7 @@ export default function myItemsRoute(getDB) {
   });
 
   /* ---------- PUT: update item ---------- */
-    router.put("/:id", async (req, res) => {
+	router.put("/:id", async (req, res) => {
     const userId = req.user.userId;
     if (!userId) {
       return res.status(401).json({ error: "Missing credentials" });
@@ -88,6 +88,28 @@ export default function myItemsRoute(getDB) {
 
     res.json({ success: true });
     });
+		
+	router.get("/:itemID", async (request, response) => {
+		/*
+		Endpoint for retrieving an Item object from the database. 
+		
+		No documented exceptions
+		
+		input: itemID (str, for mongoDB ObjectId construction)
+		
+		Returns: 
+		- HTTP status 200 with {
+				(item document from database)
+			}
+		- HTTP status 400 with .error: str, if itemID is invalid.
+		- HTTP status 500 for undocumented errors
+		*/
+		const HTTP_CODE_FOR_BAD_REQUEST = 400;	
+		const itemObject = await getDB().collection("Item").findOne({_id: new ObjectId(request.params.itemID)});
+		if(!itemObject) 
+			return response.status(HTTP_CODE_FOR_BAD_REQUEST).json({error: "Item with requested id is not found."});
+		response.json(itemObject);
+	});
 
   return router;
 }

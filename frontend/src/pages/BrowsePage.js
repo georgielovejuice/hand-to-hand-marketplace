@@ -4,7 +4,7 @@ import {useState, useEffect} from 'react'
 import {requestServerService} from './BrowsePage_api.js'
 
 //May throw undocumented exceptions
-export default function BrowsePage({apiURL}){
+export default function BrowsePage({apiURL, setViewingItemID}){
 	const [errorMessage, setErrorMessage] = useState('');
 	//This prevents infinite rerendering every time itemPanels is updated
 	const [requestQueryItems, setRequestQueryItems] = useState(true);
@@ -117,9 +117,10 @@ export default function BrowsePage({apiURL}){
 						name={item.name} 
 						imageURL={item.imageURL} 
 						priceTHB={item.priceTHB} 
-						itemURL={item.itemURL}
 						categories={item.categories}
 						details={item.details}
+						itemID={item._id}
+						setViewingItemID={setViewingItemID}
 					/>);
 				}
 				setItemPanels(itemPanelArray);
@@ -129,7 +130,7 @@ export default function BrowsePage({apiURL}){
 		
 		queryItemsToItemPanels();
 		}, 
-		[requestQueryItems, apiURL, serviceRequest]
+		[requestQueryItems, apiURL, serviceRequest, setViewingItemID]
 	);
 	
 	return (
