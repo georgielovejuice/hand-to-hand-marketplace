@@ -4,6 +4,7 @@ import Profile from './pages/Profile.jsx';
 import BrowsePage from './pages/BrowsePage.js';
 import MyItems from './pages/MyItems.js';
 import ItemPage from './pages/ItemPage.js';
+import ChatPage from './pages/ChatPage.jsx'
 
 import HomeTab from './HomeTab.js';
 
@@ -15,6 +16,7 @@ function App() {
 	
 	const [currentPage, setCurrentPage] = useState('Login');
 	const [userObject, setUserObject] = useState({
+		_id: '',
 		token: '',
 		name: '',
 		profilePictureURL: '',
@@ -63,9 +65,13 @@ function App() {
 			/>
 			break;
 		case('Chat'):
-			displayPage = <div>
-				<h2>Chat with item ID: {viewingItemID}</h2>
-			</div>
+			displayPage = <ChatPage 
+				APIDomain={apiURL} 
+				JWTToken={userObject.token}
+				userID={userObject._id}
+				itemID={viewingItemID}
+				redirectToChatsPage={() => {setCurrentPage('Chats');}}
+			/>
 			break;
 		default: 
 			displayPage = <div>
@@ -76,8 +82,8 @@ function App() {
 	
 	const pagesWithoutPageTabs = ['Login', 'Register'];
 	
-  return (
-    <div>
+    return (
+	<div>
 		{
 			pagesWithoutPageTabs.includes(currentPage) ? null : <HomeTab
 				redirectToBrowsePage={() => setCurrentPage('Browse')}
@@ -93,7 +99,7 @@ function App() {
 			/>
 		}
 		{displayPage}
-    </div>
+	</div>
   );
 }
 

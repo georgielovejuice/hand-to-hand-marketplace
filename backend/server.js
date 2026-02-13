@@ -4,6 +4,7 @@ import mongoClient from './database.js';
 import authRouter from './routes/auth.js';
 import profileRouter from './routes/profile.js';
 import myItemsRoute from "./routes/myItems.js";
+import chatRouter from './routes/chat.js'
 
 import express from 'express';
 import CrossOrginResourceSharing from 'cors';
@@ -88,6 +89,7 @@ async function main(){
 	app.use("/api/profile", profileRouter);
 	app.use("/api/auth", authRouter);
 	app.use("/api/myitems", myItemsRoute(() => mongoClient.db("Item")));
+	app.use("/api/chat", chatRouter);
 	console.log("Server is listening to: http://localhost:" + serverPortNumber);
 	app.listen(serverPortNumber);
 }

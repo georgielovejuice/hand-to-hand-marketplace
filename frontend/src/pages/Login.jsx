@@ -65,6 +65,7 @@ export default function Login({
 
 			const placeholderProfilePictureURL = "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"
 			setUserObject({
+                _id: objectFromResponse.safeUser._id,
 				token: objectFromResponse.token,
 				name: objectFromResponse.safeUser.name || 'User',
 				profilePictureURL: objectFromResponse.safeUser.profilePicture || placeholderProfilePictureURL,
