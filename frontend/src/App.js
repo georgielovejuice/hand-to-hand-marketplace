@@ -65,6 +65,7 @@ function App() {
 			displayPage = <ItemPage
 				itemAPIURL={apiURL + '/myitems/' + viewingItemID}
 				JWTToken={userObject.token}
+                userID={userObject._id}
 				redirectToChatPage={() => {setCurrentPage('Chat');}}
 			/>
 			break;
@@ -75,7 +76,6 @@ function App() {
 				userID={userObject._id}
 				itemID={viewingItemID}
                 otherChatUserID={otherChatUserID}
-				redirectToChatsPage={() => {setCurrentPage('Chats');}}
 			/>
 			break;
         case('Chats'):

@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 
-export default function ItemPage({itemAPIURL, JWTToken, redirectToChatPage}){
+export default function ItemPage({itemAPIURL, JWTToken, userID, redirectToChatPage}){
 	const [itemObject, setItemObject] = useState({categories: [], rating: 0});
 	const [itemImageURLs, setItemImageURLs] = useState([]);
 	const [primaryItemImageIndex, setPrimaryItemImageIndex] = useState(0);
@@ -117,7 +117,10 @@ export default function ItemPage({itemAPIURL, JWTToken, redirectToChatPage}){
 				<p className="inline-block text-wrap mr-[30px] mt-[20px] text-[30px]">Price: {itemObject.priceTHB}฿</p>
 				<button className="rounded-[20px] w-[70px] bg-green-700 text-[24px]">BUY</button>
 				<button className="block rounded-[10px] w-[200px] h-[40px] mt-[20px] bg-zinc-700 text-[24px]">Add to wishlist</button>
-				<button onClick={redirectToChatPage} className="block rounded-[10px] w-[200px] h-[45px] mt-[20px] bg-blue-700 text-[24px]">Chat with seller</button>				
+                {
+                    (userID === itemObject.ownerId) ? <p className="text-[18px] mt-[20px]">You are the owner of the item.</p>
+                    : <button onClick={redirectToChatPage} className="block rounded-[10px] w-[200px] h-[45px] mt-[20px] bg-blue-700 text-[24px]">Chat with seller</button>				
+                }
 			</div>
 			<p style={{color: "red"}}>{error}</p>
 		</div>

@@ -1,6 +1,6 @@
 import {useState, useEffect} from 'react';
 
-export default function ChatPage({APIDomain, JWTToken, userID, otherChatUserID, itemID, redirectToChatsPage}){
+export default function ChatPage({APIDomain, JWTToken, userID, otherChatUserID, itemID}){
     const FIRST_CHARACTER = 0;
     const MAX_SENDING_TEXT_CHARACTERS = 255;
     const MILLISECONDS_BETWEEN_MESSAGE_FETCH = 3000;
@@ -13,6 +13,7 @@ export default function ChatPage({APIDomain, JWTToken, userID, otherChatUserID, 
         otherUserID: otherChatUserID,
         otherUserName: '',
         otherUserProfilePictureURL: '',
+        itemName: '',
     });
     const [msSinceLastMessageFetch, setMsSinceLastMessageFetch] = useState(0);
 
@@ -107,6 +108,7 @@ export default function ChatPage({APIDomain, JWTToken, userID, otherChatUserID, 
     
     async function sendMessage(){
         if(typingText.trim().length < 1) return;
+        setTypingText('');
         
         let response = null;
         try {
@@ -163,39 +165,58 @@ export default function ChatPage({APIDomain, JWTToken, userID, otherChatUserID, 
         const userIsSender = (chatObject.sender === userID);
         const positionAttributes = userIsSender ? "float-right " : "float-left ";
         
+        function Bubble(){
+            return (
+                <p className="inline-block rounded-[30px] mt-[5px] bg-blue-600 p-[10px] pl-[20px] pr-[20px]">
+                    {chatObject.content}
+                </p>
+            );            
+        }
+        
         return (
-            <div className={"block clear-both rounded-[30px] bg-blue-600 mb-[10px] p-[10px] pl-[20px] pr-[20px] " + positionAttributes}>
-                <p>{chatObject.content}</p>
+            <div className={"block clear-both mb-[20px] " + positionAttributes}>
+                {
+                    userIsSender ? null 
+                    : <img src={metadataForChat.otherUserProfilePictureURL} alt='' className='inline-block mr-[20px] w-[60px] h-[60px] rounded-[30px]'/>
+                }
+            <div className='inline-block align-middle'>
+                    <p className={userIsSender ? 'text-right' : 'text-left'}>{userIsSender ? 'Me' : metadataForChat.otherUserName}</p>
+                    <Bubble/>
+                </div>
             </div>
         );
     }
-
+    
     return (
         <div>
             <div className="w-[100vw] h-[80px] border-b-[2px] border-b-zinc-600">
                 <img src={metadataForChat.otherUserProfilePictureURL}
                     alt='Other chatting user profile'
-                    className="inline rounded-[30px] h-[75%] mt-[10px] ml-[12vw] mr-[30px]"
+                    className="inline-block rounded-[30px] h-[60px] w-[60px] mt-[10px] ml-[12vw] mr-[30px]"
                 />
-                <label className="inline-block align-middle text-[30px] font-semibold">{metadataForChat.otherUserName}</label>
-                <button className="float-right h-[75%] w-[100px] mt-[10px] mr-[12vw] bg-blue-600 rounded-[15px] text-[20px]">Sell</button>
+                <label className="inline-block align-middle mr-[15px] text-[30px] font-semibold">{metadataForChat.otherUserName}</label>
+                <label className="inline-block align-middle mt-[2px] text-[24px] font-semibold"> on "{metadataForChat.itemName}"</label>
+                {metadataForChat.selfIsSeller ? 
+                    <button className="float-right h-[75%] w-[100px] mt-[10px] mr-[12vw] bg-blue-600 rounded-[15px] text-[20px]">Sell</button>
+                    : null
+                }
             </div>
             
-            <div className="overflow-y-auto w-[100vw] h-[40vh] pl-[12vw] pr-[12vw] pt-[50px]">
+            <div className="overflow-y-auto w-[100vw] h-[70vh] pl-[12vw] pr-[12vw] pt-[50px]">
             {
                 chatObjects.map(chatObject => <ChatBubble chatObject={chatObject}/>)
             }
             </div>
             
             <div className="absolute left-[12vw] rounded-[15px] bg-white w-[75vw] h-[50px]">
-                <input
+                <textarea
                     value={typingText}
                     onChange={(htmlEvent) => {
                         setTypingText(htmlEvent.target.value.substr(FIRST_CHARACTER, MAX_SENDING_TEXT_CHARACTERS));
                     }}
-                    className="w-[85%] h-[100%] resize-none ml-[20px] p-[10px] pt-[8px] border-0 outline-none text-black bg-white overflow-y-auto"
+                    className="w-[80%] h-[100%] resize-none ml-[20px] p-[10px] pt-[12px] border-0 outline-none text-black bg-white overflow-y-auto"
                 />
-                <img onClick={sendMessage} src="/chatsend.png" className="float-right h-[60%] mr-[30px] mt-[10px]" alt='send button'/>
+                <img onClick={sendMessage} src="/chatsend.png" className="float-right h-[30px] mr-[20px] mt-[10px]" alt='send button'/>
             </div>
             <p style={{color: 'red'}}>{error}</p>
         </div>

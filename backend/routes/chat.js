@@ -51,6 +51,7 @@ router.get('/metadata', verifyToken, async (request, response) => {
         Authorization: JWTToken,
         itemID: str -> string of ObjectID of the other item,
         otherUserID: str, '' -> string of ObjectID of the other user,
+        itemName: str,
     }
 
     Returns:
@@ -94,7 +95,8 @@ router.get('/metadata', verifyToken, async (request, response) => {
         selfIsSeller: item.ownerId === userId,
         otherUserName: otherUser.name,
         otherUserProfilePictureURL: otherUser.profilePicture,
-        otherUserID: otherUser._id
+        otherUserID: otherUser._id,
+        itemName: item.name
     });
 });
 
