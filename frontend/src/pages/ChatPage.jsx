@@ -1,20 +1,20 @@
 import {useState, useEffect} from 'react';
 
-export default function ChatPage({APIDomain, JWTToken, userID, itemID, redirectToChatsPage}){
+export default function ChatPage({APIDomain, JWTToken, userID, otherChatUserID, itemID, redirectToChatsPage}){
     const FIRST_CHARACTER = 0;
     const MAX_SENDING_TEXT_CHARACTERS = 255;
-    const MILLISECONDS_BETWEEN_MESSAGE_FETCH = 0;
+    const MILLISECONDS_BETWEEN_MESSAGE_FETCH = 3000;
     
     const [error, setError] = useState('');
     const [chatObjects, setChatObjects] = useState([]);
     const [typingText, setTypingText] = useState('');
     const [metadataForChat, setMetadataForChat] = useState({
         selfIsSeller: false,
-        otherUserID: '',
+        otherUserID: otherChatUserID,
         otherUserName: '',
         otherUserProfilePictureURL: '',
     });
-    const [msSinceLastMessageFetch, setMsSinceLastMessageFetch] = useState(MILLISECONDS_BETWEEN_MESSAGE_FETCH);
+    const [msSinceLastMessageFetch, setMsSinceLastMessageFetch] = useState(0);
 
     async function fetchChatAndRedraw(){
         let response = null;
@@ -32,7 +32,8 @@ export default function ChatPage({APIDomain, JWTToken, userID, itemID, redirectT
                 method: "GET",
                 headers: {
                     Authorization: JWTToken,
-                    itemID: itemID
+                    itemID: itemID,
+                    otherUserID: metadataForChat.otherUserID,
                 },
             });
         }catch(err){
@@ -53,8 +54,8 @@ export default function ChatPage({APIDomain, JWTToken, userID, itemID, redirectT
 			objectFromResponse = await response.json();
 			
 			if(!(response.ok)){
-				setError(objectFromResponse.message ? objectFromResponse.message 
-									: "Received HTTP status " + response.status + " from server.");
+				setError(objectFromResponse.message
+                        || ("Received HTTP status " + response.status + " from server."));
 				return;
 			}
         } catch (err) {
@@ -72,7 +73,7 @@ export default function ChatPage({APIDomain, JWTToken, userID, itemID, redirectT
     }
     
     
-    async function getMetadataForChat(){
+    async function getMetadataForChat(){        
         let response = null;
         try {
             response = await fetch(`${APIDomain}/chat/metadata/`, {
@@ -105,7 +106,8 @@ export default function ChatPage({APIDomain, JWTToken, userID, itemID, redirectT
     
     
     async function sendMessage(){
-        console.log(metadataForChat.otherUserID);
+        if(typingText.trim().length < 1) return;
+        
         let response = null;
         try {
             response = await fetch(`${APIDomain}/chat/`, {
@@ -142,13 +144,6 @@ export default function ChatPage({APIDomain, JWTToken, userID, itemID, redirectT
     //Get metadata only for first time
     useEffect(() => {
         fetchChatAndRedraw();
-        if(chatObjects.length > 0){
-            const firstChatObject = chatObjects[0];
-            if(firstChatObject.sender !== userID)
-                setMetadataForChat(metadataForChat => ({otherUserID: firstChatObject.sender, ...metadataForChat}));
-            if(firstChatObject.receiver !== userID) 
-                setMetadataForChat(metadataForChat => ({otherUserID: firstChatObject.receiver, ...metadataForChat}));    
-        }
         getMetadataForChat();
     }, []);
     
@@ -157,7 +152,8 @@ export default function ChatPage({APIDomain, JWTToken, userID, itemID, redirectT
         const intervalID = setInterval(() => {
             setMsSinceLastMessageFetch(msSinceLastMessageFetch => msSinceLastMessageFetch + MILLISECONDS_BETWEEN_MESSAGE_FETCH);
         }, MILLISECONDS_BETWEEN_MESSAGE_FETCH);
-        if(msSinceLastMessageFetch < MILLISECONDS_BETWEEN_MESSAGE_FETCH) return () => clearInterval(intervalID);
+        if(msSinceLastMessageFetch < MILLISECONDS_BETWEEN_MESSAGE_FETCH) 
+            return () => clearInterval(intervalID);
         fetchChatAndRedraw();
         setMsSinceLastMessageFetch(0);
         return () => clearInterval(intervalID);
@@ -176,30 +172,32 @@ export default function ChatPage({APIDomain, JWTToken, userID, itemID, redirectT
 
     return (
         <div>
-                <div className="w-[100vw] h-[80px] border-b-[2px] border-b-zinc-600">
-                    <img src={metadataForChat.otherUserProfilePictureURL}
-                        alt='Other chatting user profile'
-                        className="inline rounded-[30px] h-[75%] mt-[10px] ml-[12vw] mr-[30px]"
-                    />
-                    <label className="inline-block align-middle text-[30px] font-semibold">{metadataForChat.otherUserName}</label>
-                    <button className="float-right h-[75%] w-[100px] mt-[10px] mr-[12vw] bg-blue-600 rounded-[15px] text-[20px]">Sell</button>
-                </div>
-                <div className="w-[100vw] h-[80vh] pl-[12vw] pr-[12vw] pt-[50px]">
-                {
-                    chatObjects.map(chatObject => <ChatBubble chatObject={chatObject}/>)
-                }
-                </div>
-                <div className="absolute left-[12vw] bottom-[50px] rounded-[15px] bg-white w-[75vw] h-[50px]">
-                    <input
-                        value={typingText}
-                        onChange={(htmlEvent) => {
-                            setTypingText(htmlEvent.target.value.substr(FIRST_CHARACTER, MAX_SENDING_TEXT_CHARACTERS));
-                        }}
-                        className="w-[85%] h-[100%] resize-none ml-[20px] p-[10px] pt-[8px] border-0 outline-none text-black bg-white overflow-y-auto"
-                    />
-                    <img onClick={sendMessage} src="/chatsend.png" className="float-right h-[60%] mr-[30px] mt-[10px]" alt='send button'/>
-                </div>
-                <p style={{color: 'red'}}>{error}</p>
+            <div className="w-[100vw] h-[80px] border-b-[2px] border-b-zinc-600">
+                <img src={metadataForChat.otherUserProfilePictureURL}
+                    alt='Other chatting user profile'
+                    className="inline rounded-[30px] h-[75%] mt-[10px] ml-[12vw] mr-[30px]"
+                />
+                <label className="inline-block align-middle text-[30px] font-semibold">{metadataForChat.otherUserName}</label>
+                <button className="float-right h-[75%] w-[100px] mt-[10px] mr-[12vw] bg-blue-600 rounded-[15px] text-[20px]">Sell</button>
+            </div>
+            
+            <div className="overflow-y-auto w-[100vw] h-[40vh] pl-[12vw] pr-[12vw] pt-[50px]">
+            {
+                chatObjects.map(chatObject => <ChatBubble chatObject={chatObject}/>)
+            }
+            </div>
+            
+            <div className="absolute left-[12vw] rounded-[15px] bg-white w-[75vw] h-[50px]">
+                <input
+                    value={typingText}
+                    onChange={(htmlEvent) => {
+                        setTypingText(htmlEvent.target.value.substr(FIRST_CHARACTER, MAX_SENDING_TEXT_CHARACTERS));
+                    }}
+                    className="w-[85%] h-[100%] resize-none ml-[20px] p-[10px] pt-[8px] border-0 outline-none text-black bg-white overflow-y-auto"
+                />
+                <img onClick={sendMessage} src="/chatsend.png" className="float-right h-[60%] mr-[30px] mt-[10px]" alt='send button'/>
+            </div>
+            <p style={{color: 'red'}}>{error}</p>
         </div>
     );
 }

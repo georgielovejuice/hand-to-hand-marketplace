@@ -5,6 +5,7 @@ import BrowsePage from './pages/BrowsePage.js';
 import MyItems from './pages/MyItems.js';
 import ItemPage from './pages/ItemPage.js';
 import ChatPage from './pages/ChatPage.jsx'
+import ChatsPage from './pages/ChatsPage.jsx'
 
 import HomeTab from './HomeTab.js';
 
@@ -22,7 +23,10 @@ function App() {
 		profilePictureURL: '',
 		phoneNumber: '',
 	});
+    
+    //These two should be set as default/unknown state whenever possible
 	const [viewingItemID, setViewingItemID] = useState(null);
+    const [otherChatUserID, setOtherChatUserID] = useState('');
 	
 	let displayPage = null;
 	switch(currentPage){
@@ -70,9 +74,22 @@ function App() {
 				JWTToken={userObject.token}
 				userID={userObject._id}
 				itemID={viewingItemID}
+                otherChatUserID={otherChatUserID}
 				redirectToChatsPage={() => {setCurrentPage('Chats');}}
 			/>
 			break;
+        case('Chats'):
+            displayPage = <ChatsPage
+                APIDomain={apiURL}
+                JWTToken={userObject.token}
+                userID={userObject._id}
+                redirectToChatPage = {(itemID, otherUserID) => {
+                    setViewingItemID(viewingItemID => itemID);
+                    setOtherChatUserID(otherChatUserID => otherUserID);
+                    setCurrentPage('Chat');
+                }}
+            />
+            break;
 		default: 
 			displayPage = <div>
 				<p>{currentPage} page not implemented.</p>
@@ -86,14 +103,30 @@ function App() {
 	<div>
 		{
 			pagesWithoutPageTabs.includes(currentPage) ? null : <HomeTab
-				redirectToBrowsePage={() => setCurrentPage('Browse')}
-				redirectToChatsPage={() => setCurrentPage('Chats')}
-				redirectToMyListingsPage={() => setCurrentPage('My Items')}
-				redirectToProfilePage={() => setCurrentPage('Your Page')}
+				redirectToBrowsePage={() => {
+                    setCurrentPage('Browse'); 
+                    setViewingItemID(null);
+                    setOtherChatUserID('');
+                }}
+				redirectToChatsPage={() => {
+                    setCurrentPage('Chats');
+                    setOtherChatUserID('');
+                }}
+				redirectToMyListingsPage={() => {
+                    setCurrentPage('My Items');
+                    setViewingItemID(null);
+                    setOtherChatUserID('');
+                }}
+				redirectToProfilePage={() => {
+                    setCurrentPage('Your Page');
+                    setViewingItemID(null);
+                    setOtherChatUserID('');
+                }}
 				username={userObject.name}
 				userProfilePictureURL={userObject.profilePictureURL}
 				logout={() => {
 					setUserObject(null);
+                    setOtherChatUserID('');
 					setCurrentPage('Login');
 				}}
 			/>

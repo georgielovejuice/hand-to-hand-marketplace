@@ -5,6 +5,42 @@ import express from 'express'
 import { ObjectId } from "mongodb";
 const router = express.Router();
 
+/*
+Gonna explain how chat works since it's kinda complex xd
+
+For buyer, you'd initially need your userID and the itemID to chat. 
+You don't know the userID of the seller yet so leave otherUserID as empty.
+/metadata will return the userID of the seller for the receiver attribute for sending a message,
+along with stuff like the name of the seller and their pfp
+
+For seller, you'd also need otherUserID which the Chats page will provide,
+since one item can have multiple buyers so you'd need to specify who.
+
+A minimal chat object/document is: {
+    _id: str,
+    itemID: str -> ObjectId
+    sender: str -> ObjectId -> who sent this
+    receiver: str -> ObjectId -> purely for seller specifying which buyer for the same itemID,
+      buyer might not need this, but kept it for simplicity for backend
+    timepoint: Date
+}
+*/
+
+function isValidObjectIDConstructor(value){
+    /*
+    Validates if value is valid for constructing MongoDB ObjectId.
+    Returns bool -> true if yes
+    */
+    const OBJECTID_STRING_SIZE = 24;
+    if((typeof value) === "string")
+        if(value.trim().length === OBJECTID_STRING_SIZE) return true;
+    else if((typeof value) === "number"){
+        const isValidUnixEpoch = value.isInteger() && value >= 0;
+        if(isValidUnixEpoch) return true;
+    }
+    return false;
+}
+
 router.get('/metadata', verifyToken, async (request, response) => {
     /*
     Endpoint for retreiving data related to the chat. 
@@ -35,20 +71,6 @@ router.get('/metadata', verifyToken, async (request, response) => {
     const {userId} = request.user;
     const {itemid, otheruserid} = request.headers;
     
-    function isValidObjectIDConstructor(value){
-        /*
-        Validates if value is valid for constructing MongoDB ObjectId.
-        Returns bool -> true if yes
-        */
-        const OBJECTID_STRING_SIZE = 24;
-        if((typeof value) === "string")
-            if(value.trim().length === OBJECTID_STRING_SIZE) return true;
-        else if((typeof value) === "number"){
-            const isValidUnixEpoch = value.isInteger() && value >= 0;
-            if(isValidUnixEpoch) return true;
-        }
-        return false;
-    } 
     if(!isValidObjectIDConstructor(userId))
         return response.status(HTTP_STATUS_FOR_UNAUTHORIZED).json({message: "Invalid userID from JWT Token."});
     if(!isValidObjectIDConstructor(itemid))
@@ -79,11 +101,14 @@ router.get('/metadata', verifyToken, async (request, response) => {
 router.get('/', verifyToken, async (request, response) => {
     /*
     Endpoint for users to retrieve chat objects using item id and their JWT token.
+    Leaving otherUserID empty will assume that the request is from a buyer,
+    which the item seller and their ID could be figured out by the endpoint.
     
     input:
     headers: {
         Authorization: JWTToken,
         itemID: str -> string of ObjectID of the item
+        otherUserID: str, '' -> string of ObjectID of the other user
     }
     
     Returns:
@@ -105,37 +130,33 @@ router.get('/', verifyToken, async (request, response) => {
     const HTTP_STATUS_FOR_UNAUTHORIZED = 401;
 
     const {userId} = request.user;
-    const {itemid} = request.headers;
-    
-    function isValidObjectIDConstructor(value){
-        /*
-        Validates if value is valid for constructing MongoDB ObjectId.
-        Returns bool -> true if yes
-        */
-        const OBJECTID_STRING_SIZE = 24;
-        if((typeof value) === "string")
-            if(value.trim().length === OBJECTID_STRING_SIZE) return true;
-        else if((typeof value) === "number"){
-            const isValidUnixEpoch = value.isInteger() && value >= 0;
-            if(isValidUnixEpoch) return true;
-        }
-        return false;
-    }
+    let {itemid, otheruserid} = request.headers;
     
     if(!isValidObjectIDConstructor(userId))
         return response.status(HTTP_STATUS_FOR_UNAUTHORIZED).json({message: "Invalid userID form from JWT Token."});
     if(!isValidObjectIDConstructor(itemid))
         return response.status(HTTP_STATUS_FOR_BAD_REQUEST).json({message: "Invalid itemid form from request header."});    
+    if(otheruserid && !isValidObjectIDConstructor(otheruserid))
+        return response.status(HTTP_STATUS_FOR_BAD_REQUEST).json({message: "Invalid otheruserid from request header."});    
+
+    if(!otheruserid){
+        const itemCollection = mongoClient.db("Item").collection("Item");
+        const item = await itemCollection.findOne({_id: new ObjectId(itemid)});
+        otheruserid = item.ownerId;
+    }
 
     const EARLIER_FIRST = 1;
     const chatCollection = mongoClient.db("Chat").collection("Chat");
-    const chatsWithMatchingItemAndUserIterator = chatCollection.find({
+    const chatsIterator = chatCollection.find({
         itemID: itemid,
-        $or: [{sender: userId}, {receiver: userId}]
+        $or: [
+            {$and: [{sender: userId}, {receiver: otheruserid}]},
+            {$and: [{sender: otheruserid}, {receiver: userId}]}
+        ]
     });
     
     const chats = [];
-    for await(let chat of chatsWithMatchingItemAndUserIterator)
+    for await(const chat of chatsIterator)
         chats.push(chat);
     
     response.json(chats);
@@ -173,21 +194,6 @@ router.post('/', verifyToken, async (request, response) => {
    
     const {userId} = request.user;
     const {itemID, message, receiver} = request.body;
-    
-    function isValidObjectIDConstructor(value){
-        /*
-        Validates if value is valid for constructing MongoDB ObjectId.
-        Returns bool -> true if yes
-        */
-        const OBJECTID_STRING_SIZE = 24;
-        if((typeof value) === "string")
-            if(value.trim().length === OBJECTID_STRING_SIZE) return true;
-        else if((typeof value) === "number"){
-            const isValidUnixEpoch = value.isInteger() && value >= 0;
-            if(isValidUnixEpoch) return true;
-        }
-        return false;
-    }
 
     if(!isValidObjectIDConstructor(userId))
         return response.status(HTTP_STATUS_FOR_UNAUTHORIZED).json({message: "Invalid userID form from JWT Token."});
@@ -211,6 +217,71 @@ router.post('/', verifyToken, async (request, response) => {
     
     if(acknowledged) return response.status(HTTP_STATUS_OK).json({});
     else return response.status(HTTP_STATUS_FOR_SERVER_ERROR).json({message: "Database did not acknowledge write request."});
+});
+
+
+router.get('/preview', verifyToken, async (request, response) => {
+    /*
+    Endpoint for returning chat previews for the Chats page.
+    
+    Input:
+    - headers: {Authorization: JWTToken}
+    
+    Returns:
+    - HTTP status 200 with [
+        {
+            lastMessage: str[1-255],
+            itemName: str,
+            itemID: str -> ObjectId of the item the user is chatting about,
+            otherUserID: str -> ObjectId of the item the user is chatting about,
+        },
+        ...
+    ]
+    - HTTP status 401 with .message if user JWTToken is invalid    
+    - HTTP status 500 for undocumented errors    
+    */
+
+    const LATER_FIRST = -1;
+    const HTTP_STATUS_FOR_UNAUTHORIZED = 401;    
+
+    const {userId} = request.user;
+
+    if(!isValidObjectIDConstructor(userId))
+        return response.status(HTTP_STATUS_FOR_UNAUTHORIZED).json({message: "Invalid userID form from JWT Token."});
+    
+    const chatCollection = mongoClient.db("Chat").collection("Chat");
+    const chatsWithUserIterator = chatCollection.find({
+        $or: [{sender: userId}, {receiver: userId}]
+    }).sort({timepoint: LATER_FIRST});
+    
+    const chatPreviewObjects = [];
+    //worst case O(n^2) i should kms
+    for await(const chat of chatsWithUserIterator){
+        let skipChatElement = false;
+        
+        for(const chatPreview of chatPreviewObjects){
+            const betweenSameRecipients = ((chatPreview.otherUserID === chat.sender) && (userId === chat.receiver))
+                                            || ((chatPreview.otherUserID === chat.receiver) && (userId === chat.sender));
+            const latestMessageAlreadyStored = (chatPreview.itemID === chat.itemID) && betweenSameRecipients;
+            if(latestMessageAlreadyStored){
+                skipChatElement = true;
+                break;
+            }
+        }
+        if(skipChatElement) continue;
+        
+        chatPreviewObjects.push({
+            lastMessage: chat.content,
+            itemID: chat.itemID,
+            otherUserID: ((chat.sender === userId) ? chat.receiver : chat.sender)
+        });
+    }
+    const itemCollection = mongoClient.db("Item").collection("Item");
+    for(const chatPreview of chatPreviewObjects){
+        chatPreview.itemName = (await itemCollection.findOne({_id: new ObjectId(chatPreview.itemID)})).name;
+    }
+    
+    response.json(chatPreviewObjects);
 });
 
 export default router;
