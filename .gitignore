@@ -6,3 +6,6 @@ backend/node_modules
 backend/databaseCredentials.js
 frontend/node_modules
 backend/backendCredentials.js
+
+CHECKPOINT_RESTORE_STATUS.md
+PRODUCTION.md

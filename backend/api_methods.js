@@ -1,107 +1,68 @@
 export async function queryItems(parsedObject, itemCollection, response) {
-	/*
-	Endpoint for returning search/query for Browse Page.
-	First it filters items using mongo DB query with the .query attribute;
-	then if the .searchBarText is empty, it returns the Items Objects from the query directly.
-	If .searchBarText is not empty, every word in it is searched against an item's title, category or details text,
-	an item which does not have any word matching to .searchBarText is discarded, others are returned.
-	
-	Expected parsedObject = {
-		searchBarText: str,
-		query: {
-			(argument for mongoDB .find )
-		}
-	}
-		
-	Responds with:
-	- HTTP status 200 with {
-		[
-			{
-				...Database Item object which conforms to the client query
-			}
-			...
-		]
-	}
-	
-	- HTTP status 500 for undocumented errors
-	
-	May throw undocumented exceptions
-	*/
-
-  // ---- helpers ----
-  function textToSearchTokens(str) {
-    return new Set(str.trim().toLowerCase().split(" ").filter(Boolean));
-	}
-
-  function hasIntersection(setA, setB) {
-    for (const val of setA) {
-      if (setB.has(val)) return true;
+  try {
+    if (typeof parsedObject.searchBarText !== "string") {
+      return response.status(400).json({ error: "Invalid search text" });
     }
-    return false;
-  }
-
-  function returnItemsHavingSearchTokens(items, searchTokens) {
-    const result = [];
-
-    for (const item of items) {
-      // name
-      if (hasIntersection(textToSearchTokens(item.name), searchTokens)){
-        result.push(item);
-        continue;
-      }
-
-      // categories
-      const categoriesText = item.categories.join(" ");
-      if (hasIntersection(textToSearchTokens(categoriesText), searchTokens)) {
-        result.push(item);
-        continue;
-      }
-
-      // details
-      if (hasIntersection(textToSearchTokens(item.details), searchTokens)) {
-        result.push(item);
-      }
+    if (!(parsedObject.query instanceof Object)) {
+      return response.status(400).json({ error: "Invalid query" });
     }
 
-    return result;
-  }
+    const page = Math.max(1, parseInt(parsedObject.page) || 1);
+    const limit = 20;
+    const skip = (page - 1) * limit;
 
-  // ---- validation ----
-  if (typeof parsedObject.searchBarText !== "string")
-    throw new SyntaxError("searchBarText must be string");
-
-  if (!(parsedObject.query instanceof Object))
-    throw new SyntaxError("query must be an object");
-
-  // ---- fetch items ----
-  const cursor = itemCollection.find(parsedObject.query);
-  const items = [];
-
-  for await (const item of cursor) {
-    if (typeof item.name !== "string") continue;
-    if (!(item.categories instanceof Array)) continue;
-    if (typeof item.details !== "string") continue;
-
-    let invalidCategory = false;
-    for (const c of item.categories) {
-      if (typeof c !== "string") {
-        invalidCategory = true;
-        continue;
+    const searchTokens = textToSearchTokens(parsedObject.searchBarText);
+    
+    let pipeline = [
+      { $match: parsedObject.query },
+      { $sort: { createdAt: -1 } },
+      { $facet: {
+          metadata: [{ $count: "total" }],
+          items: [{ $skip: skip }, { $limit: limit }]
+        }
       }
-    }
-    if (invalidCategory) continue;
+    ];
 
-    items.push(item);
-  }
+    const result = await itemCollection.aggregate(pipeline).toArray();
+    const [{ metadata, items }] = result;
+    const total = metadata[0]?.total || 0;
+    
+    const filtered = searchTokens.size === 0 
+      ? items 
+      : items.filter(item => itemMatchesSearch(item, searchTokens));
 
-  // ---- search ----
-  const searchTokens = textToSearchTokens(parsedObject.searchBarText);
-
-  if (searchTokens.size === 0) {
-    response.json({ items });
-  } else {
     response.json({
-      items: returnItemsHavingSearchTokens(items, searchTokens),
+      items: filtered,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
     });
+  } catch (error) {
+    console.error("Query error:", error);
+    response.status(500).json({ error: "Search failed" });
   }
+}
+
+function textToSearchTokens(str) {
+  return new Set(str.trim().toLowerCase().split(" ").filter(Boolean));
+}
+
+function itemMatchesSearch(item, searchTokens) {
+  const nameTokens = textToSearchTokens(item.name || "");
+  const categoryTokens = textToSearchTokens((item.categories || []).join(" "));
+  const detailsTokens = textToSearchTokens(item.details || "");
+  
+  return hasIntersection(nameTokens, searchTokens) ||
+         hasIntersection(categoryTokens, searchTokens) ||
+         hasIntersection(detailsTokens, searchTokens);
+}
+
+function hasIntersection(setA, setB) {
+  for (const val of setA) {
+    if (setB.has(val)) return true;
+  }
+  return false;
 }

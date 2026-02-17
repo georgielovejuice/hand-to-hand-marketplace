@@ -1,11 +1,21 @@
 import { useState, useEffect } from "react";
+import { uploadImageToS3 } from "../utils/s3Upload.js";
 
 export default function Profile({
-	profileAPIURL,
-	changePasswordAPIURL,
+	apiURL,
 	userObject,
 	setUserObject,
 }){
+  const profileAPIURL = `${apiURL}/profile`;
+  const changePasswordAPIURL = `${apiURL}/profile/password`;
+  const baseUrl = apiURL.replace(/\/api$/, '');
+  
+  const buildImageUrl = (imageURL) => {
+    if (!imageURL) return null;
+    if (imageURL.startsWith('http')) return imageURL;
+    return `${baseUrl}/resource/${imageURL}`;
+  };
+
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("profile");
   const [editMode, setEditMode] = useState(false);
@@ -16,6 +26,9 @@ export default function Profile({
     phone: "",
     profilePicture: "",
   });
+  const [profileFile, setProfileFile] = useState(null);
+  const [profilePreviewUrl, setProfilePreviewUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
@@ -25,6 +38,17 @@ export default function Profile({
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    if (!profileFile) {
+      setProfilePreviewUrl("");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(profileFile);
+    setProfilePreviewUrl(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [profileFile]);
 
   const fetchProfile = async () => {
 		setLoading(true);
@@ -103,7 +127,25 @@ export default function Profile({
 		const trimmedName = form.name.trim();
 		const trimmedEmail = form.email.trim();
 		const trimmedPhoneNumber = form.phone.trim();
-		const trimmedProfilePictureURL = form.profilePicture.trim();
+    const trimmedProfilePictureURL = form.profilePicture.trim();
+    let finalProfilePictureUrl = trimmedProfilePictureURL;
+    if (profileFile) {
+      setUploading(true);
+      try {
+        const key = await uploadImageToS3({
+          token: userObject.token,
+          apiUrl: apiURL,
+          purpose: "profile",
+          file: profileFile
+        });
+        finalProfilePictureUrl = key;
+      } catch (uploadError) {
+        setError(uploadError.message || "Failed to upload profile image");
+        setUploading(false);
+        return;
+      }
+      setUploading(false);
+    }
     try {
 			/*
 			Based on Window.fetch(), raises
@@ -128,7 +170,7 @@ export default function Profile({
 					name: trimmedName,
 					email: trimmedEmail,
 					phone: trimmedPhoneNumber,
-					profilePicture: trimmedProfilePictureURL
+          profilePicture: finalProfilePictureUrl
 				})
 			});
 		}catch(err){
@@ -158,10 +200,11 @@ export default function Profile({
 				...userObject,
 				email: trimmedEmail,
 				name: trimmedName,
-				profilePictureURL: trimmedProfilePictureURL,
+        profilePictureURL: finalProfilePictureUrl,
 				phoneNumber: trimmedPhoneNumber
 			});
 			setSuccess("Profile updated successfully!");
+      setProfileFile(null);
 			setEditMode(false);
     }catch (err){
 			//No catch for AbortError, React couldn't find its definition
@@ -269,7 +312,7 @@ export default function Profile({
                 <div className="flex flex-col items-center mb-4">
                   <div className="avatar mb-3">
                     <div className="w-24 rounded-full ring ring-orange-400 ring-offset-2">
-                      <img src={userObject.profilePictureURL || "https://via.placeholder.com/150"} alt="Profile" />
+                      <img src={buildImageUrl(userObject.profilePictureURL) || "https://via.placeholder.com/150"} alt="Profile" />
                     </div>
                   </div>
                   <h3 className="font-bold text-lg">{userObject.name}</h3>
@@ -368,7 +411,7 @@ export default function Profile({
                     <form onSubmit={handleUpdateProfile} className="space-y-4 bg-zinc-500 ">
                       <div className="form-control">
                         <label className="label">
-                          <span className="label-text font-semibold">Profile Picture URL</span>
+                          <span className="label-text font-semibold">Profile Picture</span>
                         </label>
                         <input
                           type="text"
@@ -378,6 +421,15 @@ export default function Profile({
                           disabled={!editMode}
                           placeholder="https://example.com/your-image.jpg"
                         />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={!editMode}
+                          onChange={(e) => setProfileFile(e.target.files?.[0] || null)}
+                        />
+                        {profilePreviewUrl ? (
+                          <img src={profilePreviewUrl} alt="" className="mt-2 w-24 h-24 rounded-full" />
+                        ) : null}
                       </div>
 
                       <div className="form-control">
@@ -427,14 +479,16 @@ export default function Profile({
                           <button 
                             type="submit"
                             className="btn bg-gradient-to-r from-orange-400 to-amber-500 hover:from-orange-500 hover:to-amber-600 text-white border-none"
+                            disabled={uploading}
                           >
-                            Save Changes
+                            {uploading ? "Uploading..." : "Save Changes"}
                           </button>
                           <button 
                             type="button"
                             className="btn btn-ghost"
                             onClick={() => {
                               setEditMode(false);
+                              setProfileFile(null);
                               setForm({
                                 name: userObject.name,
                                 email: userObject.email,

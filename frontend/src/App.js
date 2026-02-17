@@ -55,8 +55,7 @@ function App() {
 			break;
 		case('Your Page'):
 			displayPage = <Profile
-				profileAPIURL={apiURL + '/profile'}
-				changePasswordAPIURL={apiURL + '/profile/password'}
+				apiURL={apiURL}
 				userObject={userObject}
 				setUserObject={setUserObject}
 			/>
@@ -67,6 +66,7 @@ function App() {
 				JWTToken={userObject.token}
                 userID={userObject._id}
 				redirectToChatPage={() => {setCurrentPage('Chat');}}
+				apiURL={apiURL}
 			/>
 			break;
 		case('Chat'):

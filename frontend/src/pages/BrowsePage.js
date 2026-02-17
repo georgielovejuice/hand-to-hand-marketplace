@@ -6,12 +6,16 @@ import {requestServerService} from './BrowsePage_api.js'
 //May throw undocumented exceptions
 export default function BrowsePage({apiURL, setViewingItemID}){
 	const [errorMessage, setErrorMessage] = useState('');
-	//This prevents infinite rerendering every time itemPanels is updated
 	const [requestQueryItems, setRequestQueryItems] = useState(true);
 	const [itemPanels, setItemPanels] = useState([]);	
 	
-	//See Specify a Query for MongoDB Node.js Driver,
-	//you can do operators like $gt in query.
+	const baseUrl = apiURL.replace(/\/api$/, '');
+	
+	const buildImageUrl = (imageURL) => {
+		if (!imageURL) return null;
+		if (imageURL.startsWith('http')) return imageURL;
+		return `${baseUrl}/resource/${imageURL}`;
+	};
 	const [serviceRequest, setServiceRequest] = useState({
 		requestType: "getItems",
 		searchBarText: "",
@@ -114,8 +118,9 @@ export default function BrowsePage({apiURL, setViewingItemID}){
 				const itemPanelArray = [];
 				for(const item of itemObjects){
 					itemPanelArray.push(<Item 
+						key={item._id}
 						name={item.name} 
-						imageURL={item.imageURL} 
+						imageURL={buildImageUrl(item.imageURL)} 
 						priceTHB={item.priceTHB} 
 						categories={item.categories}
 						details={item.details}

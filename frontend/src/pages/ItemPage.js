@@ -1,10 +1,18 @@
 import {useEffect, useState} from 'react';
 
-export default function ItemPage({itemAPIURL, JWTToken, userID, redirectToChatPage}){
+export default function ItemPage({itemAPIURL, JWTToken, userID, redirectToChatPage, apiURL}){
 	const [itemObject, setItemObject] = useState({categories: [], rating: 0});
 	const [itemImageURLs, setItemImageURLs] = useState([]);
 	const [primaryItemImageIndex, setPrimaryItemImageIndex] = useState(0);
 	const [error, setError] = useState('');
+	
+	const baseUrl = apiURL ? apiURL.replace(/\/api$/, '') : '';
+	
+	const buildImageUrl = (imageURL) => {
+		if (!imageURL) return null;
+		if (imageURL.startsWith('http')) return imageURL;
+		return `${baseUrl}/resource/${imageURL}`;
+	};
 	
 	function RatingContainer(){
 		const starImages = [];
@@ -73,7 +81,7 @@ export default function ItemPage({itemAPIURL, JWTToken, userID, redirectToChatPa
 				objectFromResponse.rating = 4.25;
 				setItemObject(objectFromResponse);
 				setItemImageURLs([
-					objectFromResponse.imageURL, 
+					buildImageUrl(objectFromResponse.imageURL), 
 					"https://leonardpaper.com/Content/Images/Product/UP-12Wa.jpg",
 					"https://www.chainbaker.com/wp-content/uploads/2023/04/IMG_4692.jpg",
 					"https://funcakes.com/content/uploads/2020/08/Donut-600x450.png",
