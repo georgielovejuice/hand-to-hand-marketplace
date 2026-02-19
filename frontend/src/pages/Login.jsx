@@ -24,7 +24,7 @@ export default function Login({
 			- AbortError if abort() is called
 			- TypeError if
 				- request URL is invalid
-				- request blocked by permissions policy
+				- request blocked by permission🔍 s policy
 				- network error
 			- from await
 			*/				
@@ -65,11 +65,11 @@ export default function Login({
 
 			const placeholderProfilePictureURL = "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"
 			setUserObject({
-                _id: objectFromResponse.safeUser._id,
+                _id: objectFromResponse.user.id,
 				token: objectFromResponse.token,
-				name: objectFromResponse.safeUser.name || 'User',
-				profilePictureURL: objectFromResponse.safeUser.profilePicture || placeholderProfilePictureURL,
-				phoneNumber: objectFromResponse.safeUser.phone || ''
+				name: objectFromResponse.user.name || 'User',
+				profilePictureURL: objectFromResponse.user.profilePicture || placeholderProfilePictureURL,
+				phoneNumber: objectFromResponse.user.phone || ''
 			});
 
 			redirectToHome();
@@ -77,7 +77,7 @@ export default function Login({
 			//No catch for AbortError, React couldn't find its definition
 			if(err instanceof TypeError) setError("Couldn't decode body of server response.");		
 			if(err instanceof SyntaxError) setError("Couldn't parse JSON response from server.");						
-			else setError("Error: " + err);
+			else setError("Error: " + (err.message || String(err)));
 		}
   };
 

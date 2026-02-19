@@ -1,0 +1,768 @@
+{
+  "info": {
+    "name": "Hand-to-Hand Marketplace API",
+    "description": "Complete API collection for Hand-to-Hand Marketplace with Authentication, Items, Chat, Admin, and Upload endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "item_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "chat_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "other_user_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        },
+        "description": "Check if server is running"
+      }
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"name\": \"John Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Register a new user account"
+          }
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login user and receive JWT token"
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/profile",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "profile"]
+            },
+            "description": "Get authenticated user profile"
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\",\n  \"phone\": \"1234567890\",\n  \"bio\": \"I love second-hand items!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/profile",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "profile"]
+            },
+            "description": "Update user profile information"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Items",
+      "description": "Item management endpoints",
+      "item": [
+        {
+          "name": "Browse - Get All Items",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/items?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["items"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get all items with pagination"
+          }
+        },
+        {
+          "name": "Browse - Query Items with Filters",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"search\": \"laptop\",\n  \"category\": \"Electronics\",\n  \"minPrice\": 100,\n  \"maxPrice\": 1000,\n  \"sortBy\": \"createdAt\",\n  \"sortOrder\": \"desc\",\n  \"page\": 1,\n  \"limit\": 20\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/items/query",
+              "host": ["{{base_url}}"],
+              "path": ["items", "query"]
+            },
+            "description": "Query items with search, filters, and sorting"
+          }
+        },
+        {
+          "name": "Browse - Full Text Search",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/items/search?text=laptop&page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["items", "search"],
+              "query": [
+                {
+                  "key": "text",
+                  "value": "laptop"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Full-text search across item titles and descriptions"
+          }
+        },
+        {
+          "name": "Browse - Get by Category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/items/category/Electronics?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["items", "category", "Electronics"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get items filtered by category"
+          }
+        },
+        {
+          "name": "Browse - Get Seller Items",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/items/seller/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["items", "seller", "{{user_id}}"]
+            },
+            "description": "Get all items from a specific seller"
+          }
+        },
+        {
+          "name": "Item Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/items/{{item_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["items", "{{item_id}}"]
+            },
+            "description": "Get full details of a single item (increments views)"
+          }
+        },
+        {
+          "name": "Create Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"MacBook Pro 13-inch\",\n  \"description\": \"Excellent condition, barely used\",\n  \"price\": 800,\n  \"category\": \"Electronics\",\n  \"condition\": \"good\",\n  \"images\": []\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/items",
+              "host": ["{{base_url}}"],
+              "path": ["items"]
+            },
+            "description": "Create a new item listing"
+          }
+        },
+        {
+          "name": "Update Item",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"MacBook Pro 13-inch - Price Reduced\",\n  \"price\": 750\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/items/{{item_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["items", "{{item_id}}"]
+            },
+            "description": "Update item details (seller only)"
+          }
+        },
+        {
+          "name": "Delete Item",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/items/{{item_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["items", "{{item_id}}"]
+            },
+            "description": "Delete an item listing (seller only)"
+          }
+        },
+        {
+          "name": "Add to Favorites",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/items/{{item_id}}/favorite",
+              "host": ["{{base_url}}"],
+              "path": ["items", "{{item_id}}", "favorite"]
+            },
+            "description": "Add item to user favorites"
+          }
+        },
+        {
+          "name": "Remove from Favorites",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/items/{{item_id}}/favorite",
+              "host": ["{{base_url}}"],
+              "path": ["items", "{{item_id}}", "favorite"]
+            },
+            "description": "Remove item from user favorites"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat & Messaging",
+      "description": "Real-time messaging between users",
+      "item": [
+        {
+          "name": "Get User Chats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/chats",
+              "host": ["{{base_url}}"],
+              "path": ["chats"]
+            },
+            "description": "Get all chats for authenticated user"
+          }
+        },
+        {
+          "name": "Start Chat",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"otherUserId\": \"{{other_user_id}}\",\n  \"itemId\": \"{{item_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/chats",
+              "host": ["{{base_url}}"],
+              "path": ["chats"]
+            },
+            "description": "Start a new conversation with another user"
+          }
+        },
+        {
+          "name": "Get Chat Messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/chats/{{chat_id}}/messages?limit=50",
+              "host": ["{{base_url}}"],
+              "path": ["chats", "{{chat_id}}", "messages"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Get message history from a chat"
+          }
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Is this item still available? I'm very interested!\",\n  \"senderName\": \"John Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/chats/{{chat_id}}/messages",
+              "host": ["{{base_url}}"],
+              "path": ["chats", "{{chat_id}}", "messages"]
+            },
+            "description": "Send a message in a chat"
+          }
+        }
+      ]
+    },
+    {
+      "name": "File Upload",
+      "description": "AWS S3 image upload handling",
+      "item": [
+        {
+          "name": "Get S3 Presigned URL",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fileName\": \"item-image.jpg\",\n  \"fileSize\": 2048000,\n  \"fileType\": \"image/jpeg\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/uploads/presign",
+              "host": ["{{base_url}}"],
+              "path": ["uploads", "presign"]
+            },
+            "description": "Get presigned POST URL for S3 file upload"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "Administrative endpoints (admin role required)",
+      "item": [
+        {
+          "name": "Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/dashboard",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "dashboard"]
+            },
+            "description": "Get dashboard overview and statistics"
+          }
+        },
+        {
+          "name": "Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/statistics",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "statistics"]
+            },
+            "description": "Get detailed system statistics"
+          }
+        },
+        {
+          "name": "User Management",
+          "item": [
+            {
+              "name": "Get All Users",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/users?page=1&limit=20",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "users"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "List all users with pagination"
+              }
+            },
+            {
+              "name": "Get User Details",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/users/{{user_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "users", "{{user_id}}"]
+                },
+                "description": "Get detailed information about a specific user"
+              }
+            },
+            {
+              "name": "Suspend User",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"suspensionReason\": \"Violation of community guidelines\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/users/{{user_id}}/suspend",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "users", "{{user_id}}", "suspend"]
+                },
+                "description": "Suspend a user account"
+              }
+            },
+            {
+              "name": "Activate User",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/users/{{user_id}}/activate",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "users", "{{user_id}}", "activate"]
+                },
+                "description": "Reactivate a suspended user account"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Item Moderation",
+          "item": [
+            {
+              "name": "Get All Items",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/items?page=1&limit=20",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "items"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "List all items for moderation"
+              }
+            },
+            {
+              "name": "Get Item Details",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/items/{{item_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "items", "{{item_id}}"]
+                },
+                "description": "Get detailed information about an item for moderation"
+              }
+            },
+            {
+              "name": "Approve Item",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/items/{{item_id}}/approve",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "items", "{{item_id}}", "approve"]
+                },
+                "description": "Approve an item listing"
+              }
+            },
+            {
+              "name": "Reject Item",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"rejectionReason\": \"Prohibited item category\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/items/{{item_id}}/reject",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "items", "{{item_id}}", "reject"]
+                },
+                "description": "Reject an item listing with reason"
+              }
+            },
+            {
+              "name": "Remove Item",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/admin/items/{{item_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "items", "{{item_id}}"]
+                },
+                "description": "Delete an item from the marketplace"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

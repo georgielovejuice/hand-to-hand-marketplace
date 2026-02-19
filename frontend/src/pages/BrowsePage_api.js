@@ -57,7 +57,7 @@ export async function requestServerService(apiURL, stringifiedJSON, setErrorMess
 		const objectFromResponse = await httpResponse.json();
 		const isErrorMessage = objectFromResponse.error !== undefined;
 		if(isErrorMessage){
-			setErrorMessage(objectFromResponse.error);
+			setErrorMessage(objectFromResponse.error.message || String(objectFromResponse.error));
 			return null;
 		}
 		

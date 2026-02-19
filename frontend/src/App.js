@@ -13,7 +13,7 @@ import './App.css';
 import {useState} from 'react';
 
 function App() {
-	const apiURL = "http://localhost:5001/api";
+	const apiURL = "http://localhost:5000/api";
 	
 	const [currentPage, setCurrentPage] = useState('Login');
 	const [userObject, setUserObject] = useState({
