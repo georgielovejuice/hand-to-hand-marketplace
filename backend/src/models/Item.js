@@ -56,7 +56,7 @@ const itemSchema = new mongoose.Schema(
     },
     location: {
       type: String,
-      required: true,
+      required: false,
     },
     status: {
       type: String,

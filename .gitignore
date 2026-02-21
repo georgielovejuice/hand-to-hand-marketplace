@@ -8,3 +8,6 @@ frontend/node_modules
 backend/old_code/backendCredentials.js
 
 \docs
+
+backend/backendCredentials.js
+backend/.env
