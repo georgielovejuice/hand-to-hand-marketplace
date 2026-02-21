@@ -26,24 +26,21 @@ export function SearchBar({setSearchBarText, requestQueryingItems}){
 }
 
 //May throw undocumented exceptions
-export function Item({name, imageURL, priceTHB, itemURL, categories, details}){
+export function Item({name, imageURL, priceTHB, categories, details, itemID, setViewingItemID}){
 	function CategoriesContainer({categories}){
-		const categoryElements = [];
-		
-		for(const category of categories)
-			categoryElements.push(<button>{category}</button>);
-	
 		return(
 			<div>
-			<label>Category: </label>
-			{categoryElements}
+				<label>Category: </label>
+				{categories.map((category, idx) => (
+					<button key={idx}>{category}</button>
+				))}
 			</div>
 		);
 	}
 	
 	return (
 		<div style={{paddingBottom: "30px"}}>
-			<img src={imageURL} style={{width: "350px"}} alt=''/>
+			<img onClick={(e) => {setViewingItemID(itemID)}} src={imageURL} style={{width: "350px"}} alt=''/>
 			<p>{name}</p>
 			<p>{priceTHB}-.</p>
 			<CategoriesContainer categories={categories}/>

@@ -4,14 +4,15 @@ import {useState, useEffect} from 'react'
 import {requestServerService} from './BrowsePage_api.js'
 
 //May throw undocumented exceptions
-export default function BrowsePage({apiURL}){
+export default function BrowsePage({apiURL, setViewingItemID}){
 	const [errorMessage, setErrorMessage] = useState('');
-	//This prevents infinite rerendering every time itemPanels is updated
 	const [requestQueryItems, setRequestQueryItems] = useState(true);
 	const [itemPanels, setItemPanels] = useState([]);	
 	
-	//See Specify a Query for MongoDB Node.js Driver,
-	//you can do operators like $gt in query.
+	const buildImageUrl = (imageURL) => {
+		// Backend already returns full S3 URLs, no need to process
+		return imageURL;
+	};
 	const [serviceRequest, setServiceRequest] = useState({
 		requestType: "getItems",
 		searchBarText: "",
@@ -70,33 +71,32 @@ export default function BrowsePage({apiURL}){
 			if(!(object.items instanceof Array)) 
 				throw new SyntaxError("items attribute of response not an array.");
 			for(const item of (object.items)){
-				if(typeof item.name !== "string"){
-					setErrorMessage("name attribute of item is not string type. Ignored item...");
+				if(typeof item.title !== "string"){
+					setErrorMessage("title attribute of item is not string type. Ignored item...");
 					continue;
-				}else if(typeof item.priceTHB !== "number"){
-					setErrorMessage("priceTHB attribute of item is not float type. Ignored item...");
+				}else if(typeof item.price !== "number"){
+					setErrorMessage("price attribute of item is not a number. Ignored item...");
 					continue;
-				}else if(typeof item.imageURL !== "string"){
-					setErrorMessage("imageURL attribute of item is not string type. Ignored item...");
+				}else if(!(item.images instanceof Array) || item.images.length === 0){
+					setErrorMessage("images attribute of item is not a non-empty array. Ignored item...");
 					continue;
-				}else if(!(item.categories instanceof Array)){
-					setErrorMessage("categories attribute of item is not String type. Ignored attribute.");
-					item.categories = [];
-				}else if(typeof item.details !== "string"){
-					setErrorMessage("details attribute of item is not string type. Ignored attribute...");	
-					item.details = '';					
+				}else if(typeof item.description !== "string"){
+					setErrorMessage("description attribute of item is not string type. Ignored attribute...");	
+					item.description = '';					
 				}
 				
-				let invalidCategoryType = false;
-				for(const category of item.categories){
-					if(typeof category !== "string"){
-						setErrorMessage("category in categories attribute of item is not string type. Ignored attribute...");	
-						invalidCategoryType = true;
-						break;
-					}
-				}
-				if(invalidCategoryType) item.categories = [];
-				parsedItemObjects.push(item);
+				// Convert new schema to old schema for compatibility
+				const compatibleItem = {
+					_id: item._id,
+					name: item.title,
+					priceTHB: item.price,
+					imageURL: item.images[0] || null,  // Use first image
+					details: item.description,
+					categories: item.category ? [item.category] : [],
+					...item  // Include all other properties
+				};
+				
+				parsedItemObjects.push(compatibleItem);
 			}
 			return parsedItemObjects;
 		}			
@@ -105,7 +105,8 @@ export default function BrowsePage({apiURL}){
 		async function queryItemsToItemPanels(){
 			if(requestQueryItems){
 				//May throw undocumented exceptions
-				const itemObjects = await requestServerService(apiURL, JSON.stringify(serviceRequest), setErrorMessage, handleObjectFromResponse);
+				const queryEndpoint = apiURL + '/items/query';
+				const itemObjects = await requestServerService(queryEndpoint, JSON.stringify(serviceRequest), setErrorMessage, handleObjectFromResponse);
 				if(!itemObjects){
 					//If itemObjects is null, requestServerService sets the error message via setErrorMessage.
 					return;
@@ -114,12 +115,14 @@ export default function BrowsePage({apiURL}){
 				const itemPanelArray = [];
 				for(const item of itemObjects){
 					itemPanelArray.push(<Item 
+						key={item._id}
 						name={item.name} 
-						imageURL={item.imageURL} 
+						imageURL={buildImageUrl(item.imageURL)} 
 						priceTHB={item.priceTHB} 
-						itemURL={item.itemURL}
 						categories={item.categories}
 						details={item.details}
+						itemID={item._id}
+						setViewingItemID={setViewingItemID}
 					/>);
 				}
 				setItemPanels(itemPanelArray);
@@ -129,7 +132,7 @@ export default function BrowsePage({apiURL}){
 		
 		queryItemsToItemPanels();
 		}, 
-		[requestQueryItems, apiURL, serviceRequest]
+		[requestQueryItems, apiURL, serviceRequest, setViewingItemID]
 	);
 	
 	return (

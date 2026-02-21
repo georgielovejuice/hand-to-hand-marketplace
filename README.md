@@ -1,94 +1,311 @@
-# Authentication System (JWT + bcrypt)
+# Hand-to-Hand Marketplace
 
-This project implements a JWT-based authentication system with secure password handling.
-The backend supports two authentication approaches to stay compatible with different frontend implementations.
+A production-grade second-hand marketplace with React frontend, Express.js backend, MongoDB database, AWS S3 image storage, and comprehensive admin system.
 
-The goal is to keep authentication logic clear, maintainable, and aligned with common backend practices.
+## Key Features
 
----
+### User Features
+- **User Authentication**: JWT-based auth with bcrypt password hashing and password validation
+- **User Profiles**: Customizable profiles with avatar uploads and bio
+- **Item Management**: Create, read, update, delete items with descriptions, images, and categories
+- **Marketplace Browse**: Search and filter items by category, price range, keyword, seller
+- **Item Detail Pages**: View full item details including seller information and ratings
+- **Favorites System**: Add/remove items to favorite list for quick access
+- **Messaging System**: Real-time chat between buyers and sellers with message history
 
-## Authentication Design Overview
+### Admin Features
+- **Admin Dashboard**: System-wide statistics and metrics
+- **User Management**: View all users with pagination, search by role
+- **User Details**: Inspect individual user profiles and activity
+- **User Suspension**: Suspend/activate accounts with suspension reasons
+- **Item Moderation**: Approve/reject listings with feedback
+- **Item Removal**: Remove flagged or policy-violating items
+- **System Statistics**: Comprehensive analytics (total users, items, chats, etc.)
 
-Authentication responsibilities are split as follows:
+### Technical Features
+- **Image Storage**: Direct browser-to-S3 uploads using presigned URLs
+- **Database Optimization**: Indexes on key fields (userId, category, createdAt, email)
+- **Input Validation**: Server-side validation for all user inputs (auth, items, chats, etc.)
+- **Error Handling**: Custom error classes with proper HTTP status codes
+- **Environment Security**: Secret management via .env file, no hardcoded credentials
+- **Production Ready**: Conditional logging, environment-based configuration
+- **Clean Code**: MVC architecture with Services, Repositories, Controllers pattern
 
-- **Password security** is handled using `bcrypt`
-- **User authentication and session management** is handled using JSON Web Tokens (JWT)
+## Architecture
 
-Password hashing is only used during registration and login.
-JWT is used after login to authenticate and authorize API requests.
+### Backend Structure (Express.js + Mongoose)
 
-These two concerns are intentionally kept separate.
+```
+backend/src/
+├── controllers/          # Handle HTTP requests
+│   ├── AuthController.js
+│   ├── ItemController.js
+│   ├── ChatController.js
+│   └── AdminController.js
+├── services/            # Business logic layer
+│   ├── AuthService.js
+│   ├── ItemService.js
+│   ├── ChatService.js
+│   └── AdminService.js
+├── repositories/        # Data access layer
+│   ├── UserRepository.js
+│   ├── ItemRepository.js
+│   ├── ChatRepository.js
+│   └── MessageRepository.js
+├── models/              # Mongoose schemas
+│   ├── User.js
+│   ├── Item.js
+│   ├── Chat.js
+│   └── Message.js
+├── routes/              # API endpoints
+│   ├── authRoutes.js
+│   ├── itemRoutes.js
+│   ├── chatRoutes.js
+│   ├── adminRoutes.js
+│   └── uploadRoutes.js
+├── validators/          # Input validation
+│   ├── authValidator.js
+│   ├── itemValidator.js
+│   ├── chatValidator.js
+│   └── adminValidator.js
+├── middleware/          # Express middleware
+│   └── auth.js          # JWT verification, role checking
+├── errors/              # Custom error classes
+│   ├── AppError.js
+│   └── errorHandler.js
+├── utils/               # Helper functions
+│   └── s3Helper.js      # S3 URL conversion
+├── config/              # Configuration
+│   ├── database.js      # MongoDB connection
+│   ├── credentials.js   # Environment variables
+│   └── constants.js     # App constants
+└── app.js               # Express app setup
+```
 
----
+### Frontend Structure (React)
 
-## Why JWT Is Used
+```
+frontend/src/
+├── pages/
+│   ├── Login.jsx        # Authentication page
+│   ├── Register.jsx     # User registration
+│   ├── BrowsePage.js    # Marketplace listing with filters
+│   ├── ItemPage.js      # Product detail view
+│   ├── MyItems.js       # Seller's items dashboard
+│   ├── Profile.jsx      # User profile management
+│   ├── ChatPage.jsx     # Individual chat view
+│   └── ChatsPage.jsx    # Chat list view
+├── utils/
+│   └── s3Upload.js      # S3 presigned URL upload handler
+└── App.js               # Main app component
+```
 
-JWT is used because the application follows a frontend–backend separation and exposes a REST API.
+## Tech Stack
 
-JWT allows:
-- Stateless authentication
-- Protected routes
-- Role-based access control
-- No server-side session storage
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | React 19.2.3, Tailwind CSS 4, DaisyUI 5 |
+| **Backend** | Node.js, Express 5.2.1, Mongoose 8.0.0 |
+| **Database** | MongoDB Atlas, 4 collections with indexes |
+| **Authentication** | JWT tokens, bcrypt password hashing |
+| **File Storage** | AWS S3 presigned URLs (client-side upload) |
+| **Error Handling** | Custom error classes, proper HTTP status codes |
 
-JWT is not related to how passwords are hashed and should remain unchanged regardless of the password hashing strategy.
+## Database Schema
 
----
+### Collections
 
-## Supported Authentication Modes
+**Users** - Authentication and profiles
+- email (unique, indexed)
+- hashedPassword
+- name, phone, bio
+- profilePicture
+- rating, reviewCount
+- role (user/admin)
+- isActive, suspensionReason
+- Timestamps
 
-### Mode 1: JWT + bcrypt (Recommended)
+**Items** - Marketplace listings
+- title, description
+- category (indexed)
+- price, condition
+- images (S3 keys)
+- seller (indexed), sellerName
+- status (active/sold/removed, indexed)
+- views, favorites
+- isApproved, approvedBy, rejectionReason
+- expiresAt, timestamps
+- Text search index on title + description
 
-This is the standard and recommended implementation.
+**Chats** - Conversation threads
+- participants (2 users)
+- itemId
+- createdAt (indexed)
 
-#### Flow
-1. Frontend sends the raw password over HTTPS
-2. Backend hashes the password using bcrypt during registration
-3. Backend verifies the password using bcrypt during login
-4. Backend issues a JWT on successful authentication
-5. Frontend includes the JWT in subsequent API requests
+**Messages** - Chat messages
+- chatId, sender, content
+- createdAt (indexed)
 
-#### Notes
-- Password hashing is fully controlled by the backend
-- This approach is secure, maintainable, and widely used
-- This should be the default mode going forward
+## Quick Start
 
----
+### Prerequisites
+- Node.js 18+
+- MongoDB Atlas account
+- AWS S3 bucket with credentials
 
-### Mode 2: JWT + frontend jhash + backend bcrypt (Compatibility Mode)
+### Backend Setup
 
-This mode exists to support a frontend that hashes passwords before sending them to the backend.
+```bash
+cd backend
+npm install
+```
 
-#### Flow
-1. Frontend hashes the password using `jhash`
-2. Frontend sends the hashed value to the backend
-3. Backend hashes the jhash output using bcrypt during registration
-4. Backend compares bcrypt(jhash(password)) during login
-5. Backend issues a JWT on successful authentication
-
-#### Notes
-- The backend never receives the raw password
-- bcrypt treats the jhash output as the password
-- Any change to the frontend hashing algorithm will invalidate stored passwords
-- This approach is not recommended for production use
-
-This mode should be considered temporary and used only for compatibility during development.
-
----
-
-## Security Considerations
-
-- bcrypt cannot directly compare hashes produced by another algorithm
-- Hashing a value multiple times with different algorithms does not improve security
-- HTTPS already protects passwords in transit
-- Password hashing should ideally be handled only by the backend
-
-Long-term recommendation: remove frontend hashing and rely exclusively on backend bcrypt.
-
----
-
-## Environment Variables
-
+Create `.env` file:
 ```env
-JWT_SECRET=your_secret_key
-JWT_EXPIRES_IN=1h
+NODE_ENV=development
+PORT=5000
+
+# Database
+DB_USERNAME=your_mongodb_username
+DB_PASSWORD=your_mongodb_password
+
+# AWS S3
+AWS_REGION=ap-southeast-1
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+AWS_BUCKET_NAME=your_bucket_name
+
+# JWT
+JWT_SECRET=your_super_secret_key
+JWT_EXPIRY=2h
+
+# Bcrypt
+BCRYPT_SALT_ROUNDS=10
+```
+
+Start backend:
+```bash
+npm run dev    # Development with auto-reload
+npm start      # Production
+```
+
+Backend runs on `http://localhost:5000`
+
+### Frontend Setup
+
+```bash
+cd frontend
+npm install
+```
+
+Create `.env` file:
+```env
+REACT_APP_API_URL=http://localhost:5000/api
+REACT_APP_ENV=development
+```
+
+Start frontend:
+```bash
+npm start
+```
+
+Frontend runs on `http://localhost:3000`
+
+## API Endpoints
+
+### Authentication (POST)
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login user
+- `GET /api/auth/profile` - Get current user profile (protected)
+- `PUT /api/auth/profile` - Update profile (protected)
+
+### Items (GET/POST)
+- `GET /api/items` - Get all items
+- `POST /api/items/query` - Search/filter items
+- `GET /api/items/search?text=...` - Full-text search
+- `GET /api/items/category/:category` - Items by category
+- `GET /api/items/seller/:sellerId` - Seller's items
+- `GET /api/items/:id` - Get item details
+- `POST /api/items` - Create item (protected)
+- `PUT /api/items/:id` - Update item (protected)
+- `DELETE /api/items/:id` - Delete item (protected)
+- `POST /api/items/:id/favorite` - Add to favorites (protected)
+- `DELETE /api/items/:id/favorite` - Remove from favorites (protected)
+
+### Chat (GET/POST)
+- `GET /api/chats` - Get user's chats (protected)
+- `POST /api/chats` - Start new chat (protected)
+- `GET /api/chats/:chatId` - Get chat details (protected)
+- `GET /api/chats/:chatId/messages` - Get messages (protected)
+- `POST /api/chats/:chatId/messages` - Send message (protected)
+
+### Admin (GET/POST)
+- `GET /api/admin/dashboard` - Dashboard analytics (admin)
+- `GET /api/admin/statistics` - System statistics (admin)
+- `GET /api/admin/users` - List all users (admin)
+- `GET /api/admin/users/:userId` - User details (admin)
+- `POST /api/admin/users/:userId/suspend` - Suspend user (admin)
+- `POST /api/admin/users/:userId/activate` - Activate user (admin)
+- `GET /api/admin/items` - List all items (admin)
+- `POST /api/admin/items/:itemId/approve` - Approve item (admin)
+- `POST /api/admin/items/:itemId/reject` - Reject item (admin)
+- `POST /api/admin/items/:itemId/remove` - Remove item (admin)
+
+### Upload
+- `POST /api/uploads/presign` - Get S3 presigned POST URL (protected)
+
+## Postman Collection
+
+A comprehensive Postman collection is included: `Hand-to-Hand-Marketplace.postman_collection.json`
+- Pre-configured variables (base_url, token, admin_token, etc.)
+- All API endpoints with example requests
+- Organized by feature (Auth, Items, Chat, Admin)
+
+## Security Features
+
+- JWT token-based authentication
+- Bcrypt password hashing with salt rounds
+- Role-based access control (admin/user)
+- No hardcoded credentials (uses .env)
+- Environment variable validation
+- Server-side input validation
+- CORS configuration
+- Custom error handling with proper status codes
+- Suspended users cannot login (403 Forbidden)
+
+## Development Commands
+
+Backend:
+```bash
+npm install        # Install dependencies
+npm start         # Start production server
+npm run dev       # Start with auto-reload (nodemon)
+```
+
+Frontend:
+```bash
+npm install       # Install dependencies
+npm start         # Start development server
+npm run build     # Build for production
+```
+
+## Testing
+
+Test credentials available:
+- **Admin**: admin@marketplace.com / admin123456
+- **User**: john@example.com (from seed data)
+- Register new users via authentication endpoints
+
+## License
+
+This project is private and for educational purposes.
+
+## Development Notes
+
+- Database indexes created automatically on connection
+- All environment variables must be set in `.env` file
+- Production mode disables verbose logging
+- Suspended users get 403 Forbidden response
+- S3 images served as presigned URLs with expiration
+- Chat system stores full message history
+- Item expiration set to 30 days

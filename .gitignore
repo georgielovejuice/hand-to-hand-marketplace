@@ -5,4 +5,6 @@ node_modules/
 backend/node_modules
 backend/databaseCredentials.js
 frontend/node_modules
-backend/backendCredentials.js
+backend/old_code/backendCredentials.js
+
+\docs
