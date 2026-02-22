@@ -38,7 +38,7 @@ app.post('/api', async (request, response) => {
 
 		switch(parsedObject.requestType){
 			case("getItems"):
-				await queryItems(parsedObject, itemCollection, response);
+				await queryItems(parsedObject, itemCollection, userCollection, response);
 				break;
 			default: response.json({error: "Invalid requested service type"});
 		}

@@ -4,6 +4,7 @@ import { verifyToken } from "../middleware/auth.js";
 import express from 'express'
 import { ObjectId } from "mongodb";
 const router = express.Router();
+import openAIClient from '../openAI.js';
 
 /*
 Gonna explain how chat works since it's kinda complex xd
@@ -156,7 +157,7 @@ router.get('/', verifyToken, async (request, response) => {
             {$and: [{sender: otheruserid}, {receiver: userId}]}
         ]
     });
-    
+
     const chats = [];
     for await(const chat of chatsIterator)
         chats.push(chat);
@@ -167,6 +168,7 @@ router.get('/', verifyToken, async (request, response) => {
 router.post('/', verifyToken, async (request, response) => {
    /*
     Endpoint for user to post a message. If .message is empty, the message is not stored.
+    For first message on an item from buyer, LLM will adjust their preference attribute to take the item into account.
     
     Input:
     headers: {Authorization: JWTToken}
@@ -184,6 +186,20 @@ router.post('/', verifyToken, async (request, response) => {
     - HTTP status 500 with .message describing write error on database
     - HTTP status 500 for undocumented errors
     */
+    
+    async function adjustUserPreferenceString(originalPreference, itemSummary){
+      const response = await openAIClient.responses.create({
+          model: "gpt-4.1-nano",
+          input: `
+          Given that the orignal user preference is: "${originalPreference}",
+          and the summary of the item they are potentially interested is "${itemSummary}",
+          return a user preference text that takes the item into account in less than 15 words.
+          Do not return sentences, only keywords without adjectives and give the item equal priority to original preference.
+          The keywords from the item should be no more than 3.
+          `
+      });
+      return response.output_text.trim().substr(0, 64);
+    }
     
     const HTTP_STATUS_OK = 200;
     const HTTP_STATUS_FOR_NO_CONTENT = 204;
@@ -209,6 +225,31 @@ router.post('/', verifyToken, async (request, response) => {
     if(emptyMessage) return response.status(HTTP_STATUS_FOR_NO_CONTENT).json({});
     
     const chatCollection = mongoClient.db("Chat").collection("Chat");
+    
+    const chat = await chatCollection.findOne({
+        itemID: itemID,
+        $or: [
+            {$and: [{sender: userId}, {receiver: receiver}]},
+            {$and: [{sender: receiver}, {receiver: userId}]}
+        ]
+    });
+    const isFirstMessage = (chat === null);
+    
+    if(isFirstMessage){
+      const userCollection = mongoClient.db("User").collection("User");
+      const itemCollection = mongoClient.db("Item").collection("Item");
+      const user = await userCollection.findOne({_id: new ObjectId(userId)});
+      const item = await itemCollection.findOne({_id: new ObjectId(itemID)});
+      
+      const userIsBuyer = item.ownerId !== userId;
+      if(userIsBuyer){
+        await userCollection.updateOne(
+          {_id: new ObjectId(userId)}, 
+          {$set: {preferences: await adjustUserPreferenceString(user.preferences || '', item.summary)}}
+        )
+      }
+    }
+    
     const {acknowledged} = await chatCollection.insertOne({
         sender: userId, 
         receiver: receiver,

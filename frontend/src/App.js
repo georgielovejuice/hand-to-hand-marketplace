@@ -48,6 +48,7 @@ function App() {
 			displayPage = <BrowsePage 
 				apiURL={apiURL}
 				setViewingItemID={(itemID) => {setCurrentPage("Item"); setViewingItemID(itemID);}}
+        userID={userObject._id}
 			/>
 			break;
 		case('My Items'):

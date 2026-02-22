@@ -1,7 +1,7 @@
 import {MongoClient, ServerApiVersion} from "mongodb";
 import {databaseUsername, databasePassword} from './backendCredentials.js';
 
-const databaseURL = "mongodb+srv://" + databaseUsername + ":" + databasePassword + "@auctiondraftcluster.cmlfgox.mongodb.net/";
+const databaseURL = "mongodb://localhost:28435/?directConnection=true";
 const mongoClient = new MongoClient(databaseURL, {
 	serverApi: {
 		version: ServerApiVersion.v1,

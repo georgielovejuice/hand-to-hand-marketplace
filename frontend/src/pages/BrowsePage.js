@@ -4,7 +4,7 @@ import {useState, useEffect} from 'react'
 import {requestServerService} from './BrowsePage_api.js'
 
 //May throw undocumented exceptions
-export default function BrowsePage({apiURL, setViewingItemID}){
+export default function BrowsePage({apiURL, setViewingItemID, userID}){
 	const [errorMessage, setErrorMessage] = useState('');
 	//This prevents infinite rerendering every time itemPanels is updated
 	const [requestQueryItems, setRequestQueryItems] = useState(true);
@@ -16,7 +16,8 @@ export default function BrowsePage({apiURL, setViewingItemID}){
 		requestType: "getItems",
 		searchBarText: "",
 		query: {
-		}
+		},
+    userID: userID
 	});		
 	
 	let minimumPriceTHB = 0;
@@ -141,6 +142,7 @@ export default function BrowsePage({apiURL, setViewingItemID}){
 					requestType: serviceRequest.requestType,
 					searchBarText: searchBarText,
 					query: {priceTHB: {$lte: maximumPriceTHB, $gte: minimumPriceTHB}},
+          userID: userID,
 				});
 			}}
 			requestQueryingItems={() => {

@@ -2,6 +2,25 @@
 import express from "express";
 import { ObjectId } from "mongodb";
 import { verifyToken } from "../middleware/auth.js";
+import openAIClient from '../openAI.js';
+
+async function getItemSummary(itemName, itemCategories, itemDetails){
+  /*
+  No documented errors - returns a string summarising an item based on given arguments.
+  Returned string is at most 64 characters.
+  */
+  const FIRST_CHARACTER = 0;
+    const response = await openAIClient.responses.create({
+        model: "gpt-4.1-nano",
+        input: `
+        Summarise the given item in 5 words:
+        Name: ${itemName}
+        Categories: ${itemCategories}
+        Description: ${itemDetails}
+        `
+    })
+    return response.output_text.trim().substr(FIRST_CHARACTER, 64);
+}
 
 export default function myItemsRoute(getDB) {
   const router = express.Router();
@@ -25,6 +44,8 @@ export default function myItemsRoute(getDB) {
 
   /* ---------- POST: create item ---------- */
   router.post("/", async (req, res) => {
+
+    
     const userId = req.user.userId;
     if (!userId) {
       return res.status(401).json({ error: "Missing credentials" });
@@ -40,7 +61,8 @@ export default function myItemsRoute(getDB) {
       categories,
       details,
       ownerId: req.user.userId,
-      createdAt: new Date()
+      createdAt: new Date(),
+      summary: await getItemSummary(name, categories, details)
     });
 
     res.json({ success: true });
@@ -73,13 +95,21 @@ export default function myItemsRoute(getDB) {
 
     const db = getDB();
     const { id } = req.params;
+    
+    const item = req.body;
 
     const result = await db.collection("Item").updateOne(
         {
           _id: new ObjectId(id),
           ownerId: req.user.userId
         },
-        { $set: { ...req.body, updatedAt: new Date() } }
+        { 
+          $set: {
+            ...item, 
+            updatedAt: new Date(),
+            summary: await getItemSummary(item.name, item.categories, item.details)
+          } 
+        }
       );
 
     if (result.matchedCount === 0) {

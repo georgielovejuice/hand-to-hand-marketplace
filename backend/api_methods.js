@@ -1,4 +1,7 @@
-export async function queryItems(parsedObject, itemCollection, response) {
+import { ObjectId } from "mongodb";
+import openAIClient from './openAI.js';
+
+export async function queryItems(parsedObject, itemCollection, userCollection, response) {
 	/*
 	Endpoint for returning search/query for Browse Page.
 	First it filters items using mongo DB query with the .query attribute;
@@ -11,6 +14,7 @@ export async function queryItems(parsedObject, itemCollection, response) {
 		query: {
 			(argument for mongoDB .find )
 		}
+    userID: str -> ObjectId of a User object
 	}
 		
 	Responds with:
@@ -27,43 +31,17 @@ export async function queryItems(parsedObject, itemCollection, response) {
 	
 	May throw undocumented exceptions
 	*/
-
-  // ---- helpers ----
-  function textToSearchTokens(str) {
-    return new Set(str.trim().toLowerCase().split(" ").filter(Boolean));
-	}
-
-  function hasIntersection(setA, setB) {
-    for (const val of setA) {
-      if (setB.has(val)) return true;
-    }
-    return false;
-  }
-
-  function returnItemsHavingSearchTokens(items, searchTokens) {
-    const result = [];
-
-    for (const item of items) {
-      // name
-      if (hasIntersection(textToSearchTokens(item.name), searchTokens)){
-        result.push(item);
-        continue;
-      }
-
-      // categories
-      const categoriesText = item.categories.join(" ");
-      if (hasIntersection(textToSearchTokens(categoriesText), searchTokens)) {
-        result.push(item);
-        continue;
-      }
-
-      // details
-      if (hasIntersection(textToSearchTokens(item.details), searchTokens)) {
-        result.push(item);
-      }
-    }
-
-    return result;
+  
+  async function suggestItemOrder(items, searchtext){
+    const response = await openAIClient.responses.create({
+        model: "gpt-4.1-nano",
+        input: `
+        Based on the text "${searchtext}", sort the _id of the following items based on how much of its summary attribute matches the text.
+        Return only sorted _ids as an Array of strings with no other text, warnings or suggestions.
+        Items: ${items}
+        `
+    });
+    return response.output_text;
   }
 
   // ---- validation ----
@@ -72,36 +50,54 @@ export async function queryItems(parsedObject, itemCollection, response) {
 
   if (!(parsedObject.query instanceof Object))
     throw new SyntaxError("query must be an object");
+  
+  if((typeof parsedObject.userID) !== "string")
+    throw new SyntaxError("userID must be string");
+
+  const user = await userCollection.findOne({_id: new ObjectId(parsedObject.userID)});
+  const userItemPreferences = user ? user.preferences : null;
 
   // ---- fetch items ----
   const cursor = itemCollection.find(parsedObject.query);
   const items = [];
+  const itemsForLLMSuggestions = [];
+  
+  for await(const item of cursor){
+    items.push({...item, _id: item._id.toString()});
+    itemsForLLMSuggestions.push(`_id: ${item._id}, summary: ${item.summary}`);
+  }
 
-  for await (const item of cursor) {
-    if (typeof item.name !== "string") continue;
-    if (!(item.categories instanceof Array)) continue;
-    if (typeof item.details !== "string") continue;
+  let itemIDsString = "[]";
+  if (items.length > 0)
+    itemIDsString = await suggestItemOrder(itemsForLLMSuggestions, (
+      parsedObject.searchBarText.trim()
+      || userItemPreferences
+      || "No preference, list everything."
+    ));
 
-    let invalidCategory = false;
-    for (const c of item.categories) {
-      if (typeof c !== "string") {
-        invalidCategory = true;
-        continue;
+  let suggestedItemIDs = [];
+  try{
+    suggestedItemIDs = JSON.parse(itemIDsString)
+    if(!(suggestedItemIDs instanceof Array)) throw new SyntaxError;
+  }catch(err){
+    console.log("Could not parse item ID array from LLM: " + itemIDsString);
+    console.log("\tReturning unpersonalised items...");
+  }
+  
+  const exportingItems = [];
+  for(const suggestedItemID of suggestedItemIDs)
+  {
+    for(let i = 0; i < items.length; i++){
+      const REMOVE_ELEMENT_AT_INDEX = 1;
+      if(suggestedItemID === items[i]._id){
+        exportingItems.push(items[i]);
+        items.splice(i, REMOVE_ELEMENT_AT_INDEX);
+        break;
       }
     }
-    if (invalidCategory) continue;
-
-    items.push(item);
   }
+  for(const remainingItem of items)
+    exportingItems.push(remainingItem);
 
-  // ---- search ----
-  const searchTokens = textToSearchTokens(parsedObject.searchBarText);
-
-  if (searchTokens.size === 0) {
-    response.json({ items });
-  } else {
-    response.json({
-      items: returnItemsHavingSearchTokens(items, searchTokens),
-    });
-  }
+  response.json({items: exportingItems})
 }
