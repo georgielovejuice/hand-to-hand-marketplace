@@ -1,20 +1,33 @@
 import {useState, useEffect} from 'react';
 
 export default function ChatsPage({APIDomain, JWTToken, userID, redirectToChatPage}){
-    const MILLISECONDS_BETWEEN_MESSAGE_FETCH = 3000;
+    const MILLISECONDS_BETWEEN_MESSAGE_FETCH = 5000;
     
     const [chatPreviewObjects, setChatPreviewObjects] = useState([]);
     const [errorMessage, setErrorMessage] = useState([]);
     const [msSinceLastMessageFetch, setMsSinceLastMessageFetch] = useState(0);
 
-    function ChatPreviewElement({chatPreviewObject}){ 
+    function ChatPreviewElement({chatPreviewObject}){
+        function truncateString(string, maxCharacters){
+            const FIRST_CHARACTER = 0;
+            return string.length > maxCharacters ? (string.substr(FIRST_CHARACTER, maxCharacters) + '...') : string;
+        }
+            
         return(
             <button onClick={() => {
                     redirectToChatPage(chatPreviewObject.itemID, chatPreviewObject.otherUserID);
                 }} 
-                className=" p-[5px] mb-[5px] block bg-zinc-700 text-white"
-            >                
-                {`${chatPreviewObject.itemName}: ${chatPreviewObject.lastMessage}`}
+                className="w-[100%] h-[75px] mb-[20px] block bg-[#C93400]"
+            >
+                <img className="float-left object-cover w-[120px] h-[100%]" src={chatPreviewObject.itemImageURL}>
+                </img>
+                <div className="float-left ml-[20px]">
+                    <h3 className="mt-[8px] text-left font-semibold text-[22px] text-[#FFD6A7]">{truncateString(chatPreviewObject.itemName, 40)}</h3>
+                    <p  className="ml-[1px] text-left font-semibold text-[16px]">
+                    {truncateString(`${chatPreviewObject.senderName}: ${chatPreviewObject.lastMessage}`, 70)}
+                    </p>
+                </div>
+                <p className="float-right mt-[47px] mr-[40px] text-[10px]">{new Date(chatPreviewObject.timepoint).toLocaleString()}</p>
             </button>
         );
     }
@@ -84,11 +97,13 @@ export default function ChatsPage({APIDomain, JWTToken, userID, redirectToChatPa
     }, [msSinceLastMessageFetch]);
 
     return(
-        <div>
-        <h1 className="text-[48px]">Chats</h1>
-        {
-            chatPreviewObjects.map(object => <ChatPreviewElement chatPreviewObject={object}/>)
-        }
+        <div className="w-[100%] h-[100%] bg-[#FEECD3]">
+            <h1 className="text-[48px] ml-[35px] pt-[15px] font-[700] text-[#7C2808]">Chats</h1>
+            <div className="overflow-y-auto overflow-x-auto w-[75vw] h-[80vh] mt-[30px] ml-[12vw]">
+            {
+                chatPreviewObjects.map(object => <ChatPreviewElement chatPreviewObject={object}/>)
+            }
+            </div>
         <p style={{color: 'red'}}>{errorMessage}</p>
         </div>
     );

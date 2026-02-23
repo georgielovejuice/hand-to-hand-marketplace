@@ -276,7 +276,7 @@ router.get('/preview', verifyToken, async (request, response) => {
             lastMessage: str[1-255],
             itemName: str,
             itemID: str -> ObjectId of the item the user is chatting about,
-            otherUserID: str -> ObjectId of the item the user is chatting about,
+            otherUserID: str -> ObjectId of the other User in the chat.
         },
         ...
     ]
@@ -293,6 +293,8 @@ router.get('/preview', verifyToken, async (request, response) => {
         return response.status(HTTP_STATUS_FOR_UNAUTHORIZED).json({message: "Invalid userID form from JWT Token."});
     
     const chatCollection = mongoClient.db("Chat").collection("Chat");
+    const userCollection = mongoClient.db("User").collection("User");
+
     const chatsWithUserIterator = chatCollection.find({
         $or: [{sender: userId}, {receiver: userId}]
     }).sort({timepoint: LATER_FIRST});
@@ -312,16 +314,21 @@ router.get('/preview', verifyToken, async (request, response) => {
             }
         }
         if(skipChatElement) continue;
+        const senderUserObject = await userCollection.findOne({_id: new ObjectId(chat.sender)});
         
         chatPreviewObjects.push({
             lastMessage: chat.content,
             itemID: chat.itemID,
-            otherUserID: ((chat.sender === userId) ? chat.receiver : chat.sender)
+            otherUserID: ((chat.sender === userId) ? chat.receiver : chat.sender),
+            senderName: senderUserObject.name,
+            timepoint: chat.timepoint,
         });
     }
     const itemCollection = mongoClient.db("Item").collection("Item");
     for(const chatPreview of chatPreviewObjects){
-        chatPreview.itemName = (await itemCollection.findOne({_id: new ObjectId(chatPreview.itemID)})).name;
+      const item = await itemCollection.findOne({_id: new ObjectId(chatPreview.itemID)});
+      chatPreview.itemName = item.name;
+      chatPreview.itemImageURL = item.imageURL;
     }
     
     response.json(chatPreviewObjects);
