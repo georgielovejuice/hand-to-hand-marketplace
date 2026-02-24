@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { FaEye, FaEyeSlash } from 'react-icons/fa'
+import AuthLayout from '../layouts/authLayout'
 
 export default function Register({
 	registrationURL, 
@@ -11,6 +13,8 @@ export default function Register({
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -85,84 +89,89 @@ export default function Register({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center p-4">
-      <div className="card w-full max-w-md bg-base-100 shadow-2xl">
-        <div className="card-body">
-          <h2 className="card-title text-3xl font-bold mb-2">Create Account</h2>
-          <p className="text-base-content/60 mb-6">Sign up to get started</p>
+    <AuthLayout title="Sign Up">
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-semibold">Username</span>
-              </label>
-              <input
-                type="text"
-                className="input input-bordered w-full"
-                placeholder="johndoe"
-                value={form.username}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                required
-              />
-            </div>
+      <form
+        onSubmit={handleSubmit}
+        className='w-full flex flex-col px-5 ml-4 mr-5'
+      >
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-semibold">Email</span>
-              </label>
-              <input
-                type="email"
-                className="input input-bordered w-full"
-                placeholder="you@example.com"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                required
-              />
-            </div>
+        <p className='text-black text-lg'>Username</p>
+        <input
+          name='name'
+          value={form.name}
+          onChange={(htmlEvent) => {setForm({...form, name: htmlEvent.target.value})}}
+          type="text"
+          placeholder='Username'
+          className='mb-5 p-3 rounded-lg border border-gray-400'
+        />
 
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-semibold">Password</span>
-              </label>
-              <input
-                type="password"
-                className="input input-bordered w-full"
-                placeholder="••••••••"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                required
-              />
-            </div>
+        <p className='text-black text-lg'>Email</p>
+        <input
+          name='email'
+          value={form.email}
+          onChange={(htmlEvent) => {setForm({...form, email: htmlEvent.target.value})}}
+          type="email"
+          placeholder='Email'
+          className='mb-5 p-3 rounded-lg border border-gray-400'
+        />
 
-            {error && (
-              <div className="alert alert-error">
-                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>{error}</span>
-              </div>
-            )}
 
-            <button 
-              type="submit" 
-              className={`btn btn-primary w-full ${loading ? 'loading' : ''}`}
-              disabled={loading}
-            >
-              {loading ? 'Creating Account...' : 'Register'}
-            </button>
-          </form>
+        <p className='text-black text-lg'>Password</p>
+        <div className="relative mb-5">
+          <input
+            name='password'
+            value={form.password}
+            onChange={(htmlEvent) => {setForm({...form, password: htmlEvent.target.value})}}
+            type={showPassword ? "text" : "password"}
+            placeholder='At least 6 characters'
+            className='w-full p-3 pr-10 rounded-lg border border-gray-400 outline-none'
+          />
 
-          <p className="text-center text-sm mt-4 text-base-content/60">
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-white transition"
+          >
+            {showPassword ? <FaEyeSlash /> : <FaEye />}
+          </button>
+        </div>
+
+        <p className='text-black text-lg'>Re-enter Password</p>
+        <div className="relative">
+          <input
+            name='confirmPassword'
+            value={form.confirmPassword}
+            onChange={(htmlEvent) => {setForm({...form, confirmPassword: htmlEvent.target.value})}}
+            type={showConfirmPassword ? "text" : "password"}
+            placeholder='Enter your password again'
+            className='w-full p-3 pr-10 rounded-lg border border-gray-400 outline-none'
+          />
+
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-white transition"
+          >
+            {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+          </button>
+        </div>
+
+        <div className='mt-10 flex flex-col justify-center items-center'>
+          <button
+            type="submit"
+            className='w-40 bg-[rgb(243,126,0)] text-black text-lg px-6 py-3 rounded-xl font-semibold hover:bg-orange-600 transition-colors duration-300'
+          >
+            Sign up
+          </button>
+
+          <p className='mt-1 text-black text-lg'>
             Already have an account?{" "}
-            <button 
-              onClick={() => redirectToLogin()}
-              className="link link-primary font-semibold"
-            >
-              Login
-            </button>
+            <button onClick={redirectToLogin} className="text-orange-400 font-semibold">Log in</button>
           </p>
         </div>
-      </div>
-    </div>
+
+      </form>
+    </AuthLayout>
   );
 }

@@ -36,7 +36,7 @@ export default function BrowsePage({apiURL, userID, setViewingItemID}) {
   }, [searchText])
 
   return (
-    <div className='min-h-screen bg-orange-200'>
+    <div className='min-h-screen bg-[#FEECD3]'>
       {
         waitingForResponse && 
         <div className="absolute flex justify-center items-center w-[100vw] h-[100vh] bg-[rgba(255,255,255,0.9)]">
