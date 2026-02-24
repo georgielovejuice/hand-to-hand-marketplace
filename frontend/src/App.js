@@ -8,6 +8,7 @@ import ChatPage from './pages/ChatPage.jsx'
 import ChatsPage from './pages/ChatsPage.jsx'
 
 import HomeTab from './HomeTab.js';
+import Navbar from './components/Navbar.jsx';
 
 import './App.css';
 import {useState} from 'react';
@@ -103,7 +104,7 @@ function App() {
     return (
 	<div>
 		{
-			pagesWithoutPageTabs.includes(currentPage) ? null : <HomeTab
+			pagesWithoutPageTabs.includes(currentPage) ? null : <Navbar
 				redirectToBrowsePage={() => {
                     setCurrentPage('Browse'); 
                     setViewingItemID(null);
