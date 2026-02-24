@@ -12,7 +12,7 @@ export default function BrowsePage() {
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const res = await api.get("api/items")
+        const res = await api.get("/items")
         setItems(res.data)
       } catch (error) {
         console.error(error)

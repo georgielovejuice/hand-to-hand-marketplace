@@ -3,7 +3,7 @@ import Login from './pages/Login'
 import Register from './pages/Signup'
 import Test from './pages/testing.jsx'
 import BrowsePage from './pages/BrowsePage.jsx'
-import CreateItem from './pages/CreateItem.jsx'
+import MyItem from './pages/MyItem.jsx'
 
 const App = () => {
   return (
@@ -13,7 +13,7 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/" element={<BrowsePage />} />
-        <Route path='/create' element={<CreateItem/>}></Route>
+        <Route path='/myitem' element={<MyItem/>}></Route>
 
         <Route path="/test" element={<Test />} />
       </Routes>
