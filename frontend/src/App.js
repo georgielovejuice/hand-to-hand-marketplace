@@ -102,7 +102,7 @@ function App() {
 	const pagesWithoutPageTabs = ['Login', 'Register'];
 	
     return (
-	<div>
+  <div>
 		{
 			pagesWithoutPageTabs.includes(currentPage) ? null : <Navbar
 				redirectToBrowsePage={() => {

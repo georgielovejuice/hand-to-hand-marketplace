@@ -167,7 +167,7 @@ export default function ChatPage({APIDomain, JWTToken, userID, otherChatUserID, 
         
         function Bubble(){
             return (
-                <p className="inline-block rounded-[30px] mt-[5px] bg-blue-600 p-[10px] pl-[20px] pr-[20px]">
+                <p className="inline-block rounded-[30px] mt-[5px] bg-[#C93400] p-[10px] pl-[20px] pr-[20px]">
                     {chatObject.content}
                 </p>
             );            
@@ -180,7 +180,7 @@ export default function ChatPage({APIDomain, JWTToken, userID, otherChatUserID, 
                     : <img src={metadataForChat.otherUserProfilePictureURL} alt='' className='inline-block mr-[20px] w-[60px] h-[60px] rounded-[30px]'/>
                 }
             <div className='inline-block align-middle'>
-                    <p className={userIsSender ? 'text-right' : 'text-left'}>{userIsSender ? 'Me' : metadataForChat.otherUserName}</p>
+                    <p className={userIsSender ? 'text-right text-[#370A00]' : 'text-left text-[#370A00]'}>{userIsSender ? 'Me' : metadataForChat.otherUserName}</p>
                     <Bubble/>
                 </div>
             </div>
@@ -188,21 +188,17 @@ export default function ChatPage({APIDomain, JWTToken, userID, otherChatUserID, 
     }
     
     return (
-        <div>
-            <div className="w-[100vw] h-[80px] border-b-[2px] border-b-zinc-600">
+        <div className="h-[100vh] bg-[#FFDEB8]">
+            <div className="w-[100vw] h-[80px] border-b-[2px] border-b-zinc-600 bg-[#370A00]">
                 <img src={metadataForChat.otherUserProfilePictureURL}
                     alt='Other chatting user profile'
                     className="inline-block rounded-[30px] h-[60px] w-[60px] mt-[10px] ml-[12vw] mr-[30px]"
                 />
                 <label className="inline-block align-middle mr-[15px] text-[30px] font-semibold">{metadataForChat.otherUserName}</label>
                 <label className="inline-block align-middle mt-[2px] text-[24px] font-semibold"> on "{metadataForChat.itemName}"</label>
-                {metadataForChat.selfIsSeller ? 
-                    <button className="float-right h-[75%] w-[100px] mt-[10px] mr-[12vw] bg-blue-600 rounded-[15px] text-[20px]">Sell</button>
-                    : null
-                }
             </div>
             
-            <div className="overflow-y-auto w-[100vw] h-[70vh] pl-[12vw] pr-[12vw] pt-[50px]">
+            <div className="overflow-y-auto w-[100vw] h-[70vh] pl-[12vw] pr-[12vw] pt-[50px] bg-[#FFDEB8]">
             {
                 chatObjects.map(chatObject => <ChatBubble chatObject={chatObject}/>)
             }

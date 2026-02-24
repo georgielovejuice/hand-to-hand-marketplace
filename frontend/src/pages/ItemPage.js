@@ -92,8 +92,8 @@ export default function ItemPage({itemAPIURL, JWTToken, userID, redirectToChatPa
 	[JWTToken, itemAPIURL]);
 
 	return (
-		<div className="w-[100vw] pl-[30px] pt-[30px]">
-			<div className="float-left max-w-[15%] max-h-[85vh] mr-[30px] overflow-y-auto">
+		<div className="w-[100vw] h-[100vh] pl-[30px] pt-[30px] bg-[#FEECD3]">
+    <div className="float-left max-w-[15%] max-h-[85vh] mr-[30px] overflow-y-auto">
 			{
 				itemImageURLs.map(url => <img onClick={changePrimaryItemImageIndex} src={url} alt="" className="w-[100%] mb-[30px]"/>)
 			}
@@ -103,24 +103,22 @@ export default function ItemPage({itemAPIURL, JWTToken, userID, redirectToChatPa
 			</div>
 			
 			<div className="float-left w-[40%]">
-				<h2 className="mt-[20px] text-[56px] font-bold text-wrap">{itemObject.name}</h2>
+				<h2 className="mt-[20px] text-[56px] font-bold text-wrap text-[#7C2808]">{itemObject.name}</h2>
 				<div className="ml-[5px]">
-					{itemObject.categories.map(category => <button className="mr-[10px] font-semibold">{category}</button>)}
+					{itemObject.categories.map(category => <button className="mr-[10px] font-semibold text-[#7C2808]">{category}</button>)}
 				</div>
-				<h3 className="text-wrap mt-[15px] text-[24px] font-bold">Item Description</h3>
-				<p className="text-wrap text-[20px]">{itemObject.details}</p>
-				<h3 className="text-wrap mt-[30px] text-[24px] font-bold">Item Condition</h3>
+				<h3 className="text-wrap mt-[15px] text-[24px] font-bold text-[#7C2808]">Item Description</h3>
+				<p className="text-wrap text-[20px] text-[#7C2808]">{itemObject.details}</p>
+				<h3 className="text-wrap mt-[30px] text-[24px] font-bold text-[#7C2808]">Item Condition</h3>
 				<div>
 				<RatingContainer/>
 				</div>
 				
-				<p className="inline-block text-wrap mr-[30px] mt-[20px] text-[30px]">Price: {itemObject.priceTHB}฿</p>
-				<button className="rounded-[20px] w-[70px] bg-green-700 text-[24px]">BUY</button>
-				<button className="block rounded-[10px] w-[200px] h-[40px] mt-[20px] bg-zinc-700 text-[24px]">Add to wishlist</button>
-                {
-                    (userID === itemObject.ownerId) ? <p className="text-[18px] mt-[20px]">You are the owner of the item.</p>
-                    : <button onClick={redirectToChatPage} className="block rounded-[10px] w-[200px] h-[45px] mt-[20px] bg-blue-700 text-[24px]">Chat with seller</button>				
-                }
+				<p className="inline-block text-wrap mr-[30px] mt-[20px] text-[30px] text-[#7C2808]">Price: {itemObject.priceTHB}฿</p>
+        {
+          (userID === itemObject.ownerId) ? <p className="text-[18px] mt-[20px] text-[#F37E00]">You are the owner of the item.</p>
+          : <button onClick={redirectToChatPage} className="block rounded-[10px] w-[200px] h-[45px] mt-[20px] bg-[#F37E00] text-[24px]">Chat with seller</button>				
+        }
 			</div>
 			<p style={{color: "red"}}>{error}</p>
 		</div>
