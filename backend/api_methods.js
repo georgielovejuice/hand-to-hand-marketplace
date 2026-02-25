@@ -64,7 +64,8 @@ export async function queryItems(parsedObject, itemCollection, userCollection, r
   
   for await(const item of cursor){
     items.push({...item, _id: item._id.toString()});
-    itemsForLLMSuggestions.push(`_id: ${item._id}, summary: ${item.summary}`);
+    if(item.status !== "sold")
+      itemsForLLMSuggestions.push(`_id: ${item._id}, summary: ${item.summary}`);
   }
 
   let itemIDsString = "[]";

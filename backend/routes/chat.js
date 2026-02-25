@@ -226,6 +226,11 @@ router.post('/', verifyToken, async (request, response) => {
     if(emptyMessage) return response.status(HTTP_STATUS_FOR_NO_CONTENT).json({});
     
     const chatCollection = mongoClient.db("Chat").collection("Chat");
+    const itemCollection = mongoClient.db("Item").collection("Item");
+    const item = await itemCollection.findOne({_id: new ObjectId(itemID)});
+    const chatIsReadOnly = item.status === "sold"
+    if(chatIsReadOnly)
+        return response.status(HTTP_STATUS_FOR_BAD_REQUEST).json({message: "Chat is now read only."});
     
     const chat = await chatCollection.findOne({
         itemID: itemID,
@@ -240,7 +245,6 @@ router.post('/', verifyToken, async (request, response) => {
       const userCollection = mongoClient.db("User").collection("User");
       const itemCollection = mongoClient.db("Item").collection("Item");
       const user = await userCollection.findOne({_id: new ObjectId(userId)});
-      const item = await itemCollection.findOne({_id: new ObjectId(itemID)});
       
       const userIsBuyer = item.ownerId !== userId;
       if(userIsBuyer){
