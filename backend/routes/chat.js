@@ -97,7 +97,8 @@ router.get('/metadata', verifyToken, async (request, response) => {
         otherUserName: otherUser.name,
         otherUserProfilePictureURL: otherUser.profilePicture,
         otherUserID: otherUser._id,
-        itemName: item.name
+        itemName: item.name,
+        isReadOnly: item.status === "sold",
     });
 });
 
@@ -276,7 +277,8 @@ router.get('/preview', verifyToken, async (request, response) => {
             lastMessage: str[1-255],
             itemName: str,
             itemID: str -> ObjectId of the item the user is chatting about,
-            otherUserID: str -> ObjectId of the other User in the chat.
+            otherUserID: str -> ObjectId of the other User in the chat,
+            itemStatus: str -> from Item.status
         },
         ...
     ]
@@ -329,6 +331,7 @@ router.get('/preview', verifyToken, async (request, response) => {
       const item = await itemCollection.findOne({_id: new ObjectId(chatPreview.itemID)});
       chatPreview.itemName = item.name;
       chatPreview.itemImageURL = item.imageURL;
+      chatPreview.itemStatus = item.status 
     }
     
     response.json(chatPreviewObjects);

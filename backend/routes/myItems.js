@@ -140,6 +140,23 @@ export default function myItemsRoute(getDB) {
 			return response.status(HTTP_CODE_FOR_BAD_REQUEST).json({error: "Item with requested id is not found."});
 		response.json(itemObject);
 	});
+  
+  router.post("/sell", async (request, response) => {
+		const HTTP_CODE_FOR_BAD_REQUEST = 400;	
+		const HTTP_CODE_FOR_UNAUTHORIZED = 401;	
+    
+    const {itemid} = request.headers;
+    const userId = request.user.userId;
+    
+    const itemObject = await getDB().collection("Item").findOne({_id: new ObjectId(itemid)});
+    if(!itemObject)
+			return response.status(HTTP_CODE_FOR_BAD_REQUEST).json({error: "Item with requested id is not found."});
+    
+    if(itemObject.ownerId !== userId)
+      return response.status(HTTP_CODE_FOR_UNAUTHORIZED).json({error: "User not the seller of the item."});
+    getDB().collection("Item").updateOne({_id: itemObject._id}, {$set: {status: "sold"}});
+		response.json({});    
+  });
 
   return router;
 }

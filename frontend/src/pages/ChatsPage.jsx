@@ -17,8 +17,14 @@ export default function ChatsPage({APIDomain, JWTToken, userID, redirectToChatPa
             <button onClick={() => {
                     redirectToChatPage(chatPreviewObject.itemID, chatPreviewObject.otherUserID);
                 }} 
-                className="w-[100%] h-[75px] mb-[20px] block bg-[#C93400]"
+                className="relative w-[100%] h-[75px] mb-[20px] block bg-[#C93400]"
             >
+                {
+                    (chatPreviewObject.itemStatus === "sold") &&
+                    < div className="absolute w-[100%] h-[100%] flex justify-center items-center bg-[rgba(127,127,127,0.75)]">
+                        <p className="font-semibold text-[24px]">Item is sold.</p>
+                    </div>
+                }
                 <img className="float-left object-cover w-[120px] h-[100%]" src={chatPreviewObject.itemImageURL}>
                 </img>
                 <div className="float-left ml-[20px]">

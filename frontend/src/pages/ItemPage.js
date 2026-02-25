@@ -90,6 +90,20 @@ export default function ItemPage({itemAPIURL, JWTToken, userID, redirectToChatPa
 		getItem();
 	}, 
 	[JWTToken, itemAPIURL]);
+  
+  function ChatButtonArea(){
+    if(userID === itemObject.ownerId)
+      return (
+        <p className="text-[18px] mt-[20px] text-[#F37E00]">You are the owner of the item.</p>
+      );
+    if (itemObject.status === "sold")
+      return (
+        <p className="text-[18px] mt-[20px] text-[#F37E00]">The item is sold.</p>          
+      );
+    return (
+      <button onClick={redirectToChatPage} className="block rounded-[10px] w-[200px] h-[45px] mt-[20px] bg-[#F37E00] text-[24px]">Chat with seller</button>
+    );
+  }
 
 	return (
 		<div className="w-[100vw] h-[100vh] pl-[30px] pt-[30px] bg-[#FEECD3]">
@@ -115,10 +129,7 @@ export default function ItemPage({itemAPIURL, JWTToken, userID, redirectToChatPa
 				</div>
 				
 				<p className="inline-block text-wrap mr-[30px] mt-[20px] text-[30px] text-[#7C2808]">Price: {itemObject.priceTHB}฿</p>
-        {
-          (userID === itemObject.ownerId) ? <p className="text-[18px] mt-[20px] text-[#F37E00]">You are the owner of the item.</p>
-          : <button onClick={redirectToChatPage} className="block rounded-[10px] w-[200px] h-[45px] mt-[20px] bg-[#F37E00] text-[24px]">Chat with seller</button>				
-        }
+        <ChatButtonArea/>
 			</div>
 			<p style={{color: "red"}}>{error}</p>
 		</div>

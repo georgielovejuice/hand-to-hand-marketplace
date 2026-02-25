@@ -8,12 +8,15 @@ export default function ChatPage({APIDomain, JWTToken, userID, otherChatUserID, 
     const [error, setError] = useState('');
     const [chatObjects, setChatObjects] = useState([]);
     const [typingText, setTypingText] = useState('');
+    const [confirmingSelling, setConfirmingSelling] = useState(false);
     const [metadataForChat, setMetadataForChat] = useState({
         selfIsSeller: false,
         otherUserID: otherChatUserID,
         otherUserName: '',
         otherUserProfilePictureURL: '',
         itemName: '',
+        //Hides sell button also, so it also indicates the item has been sold
+        isReadOnly: false,
     });
     const [msSinceLastMessageFetch, setMsSinceLastMessageFetch] = useState(0);
 
@@ -60,11 +63,11 @@ export default function ChatPage({APIDomain, JWTToken, userID, otherChatUserID, 
 				return;
 			}
         } catch (err) {
-			//No catch for AbortError, React couldn't find its definition
-			if(err instanceof TypeError) return setError("Couldn't decode body of server response.");		
-			if(err instanceof SyntaxError) return setError("Couldn't parse JSON response from server.");						
+            //No catch for AbortError, React couldn't find its definition
+            if(err instanceof TypeError) return setError("Couldn't decode body of server response.");		
+            if(err instanceof SyntaxError) return setError("Couldn't parse JSON response from server.");						
             throw err;
-		}
+    }
         
         if(!(objectFromResponse instanceof Array)) 
             return setError("Response not an Array.");
@@ -94,15 +97,15 @@ export default function ChatPage({APIDomain, JWTToken, userID, otherChatUserID, 
         
         let objectFromResponse;
         try{
-			objectFromResponse = await response.json();
+            objectFromResponse = await response.json();
             if(!response.ok)
                 return setError(objectFromResponse.message || ("Received HTTP status " + response.status + " from server."));
-            setMetadataForChat(metadataForChat => objectFromResponse);
+                setMetadataForChat(metadataForChat => (objectFromResponse));
         } catch (err) {
-			if(err instanceof TypeError) return setError("Couldn't decode body of server response.");		
-			if(err instanceof SyntaxError) return setError("Couldn't parse JSON response from server.");						
+            if(err instanceof TypeError) return setError("Couldn't decode body of server response.");		
+            if(err instanceof SyntaxError) return setError("Couldn't parse JSON response from server.");						
             throw err;
-		}
+        }
     }    
     
     
@@ -132,15 +135,43 @@ export default function ChatPage({APIDomain, JWTToken, userID, otherChatUserID, 
         setError('');
         if(response.ok) return await fetchChatAndRedraw();
         
+            let objectFromResponse;
+        try{
+            objectFromResponse = await response.json();
+            setError(objectFromResponse.message || ("Received HTTP status " + response.status + " from server."));
+        } catch (err) {
+            if(err instanceof TypeError) return setError("Couldn't decode body of server response.");		
+            if(err instanceof SyntaxError) return setError("Couldn't parse JSON response from server.");						
+            throw err;
+        }
+    }
+    
+    async function sellItem(){
+        let response;
+        try{
+            response = await fetch(`${APIDomain}/myitems/sell`, {
+                method: "POST",
+                headers: {
+                    Authorization: JWTToken, 
+                    'Content-Type': 'application/json',
+                    itemid: itemID
+                },
+            });          
+        }catch(err){
+            if(err instanceof TypeError) return setError("Couldn't connect to server.");		
+            throw err;            
+        }
+        
+        if(response.ok) return;
         let objectFromResponse;
         try{
-			objectFromResponse = await response.json();
-			setError(objectFromResponse.message || ("Received HTTP status " + response.status + " from server."));
+            objectFromResponse = await response.json();
+            setError(objectFromResponse.message || ("Received HTTP status " + response.status + " from server."));
         } catch (err) {
-			if(err instanceof TypeError) return setError("Couldn't decode body of server response.");		
-			if(err instanceof SyntaxError) return setError("Couldn't parse JSON response from server.");						
+            if(err instanceof TypeError) return setError("Couldn't decode body of server response.");		
+            if(err instanceof SyntaxError) return setError("Couldn't parse JSON response from server.");						
             throw err;
-		}
+        }
     }
     
     //Get metadata only for first time
@@ -187,18 +218,60 @@ export default function ChatPage({APIDomain, JWTToken, userID, otherChatUserID, 
         );
     }
     
-    return (
-        <div className="h-[100vh] bg-[#FFDEB8]">
-            <div className="w-[100vw] h-[80px] border-b-[2px] border-b-zinc-600 bg-[#370A00]">
+    function SellConfirmPopup(){
+        return (
+            <div className="absolute block flex justify-center items-center top-0 left-0 w-[99.2vw] h-[100vh] bg-[rgba(255,255,255,0.5)]">
+                <div className="flex flex-col items-center">
+                    <h2 className="pt-[15px] pl-[30px] text-[30px] text-[#FF9E21] font-bold text-center">Confirm selling "{metadataForChat.itemName}" to "{metadataForChat.otherUserName}"?</h2>
+                    <div className="left-[50%] mt-[20px]">
+                        <button
+                            onClick={async () => {
+                                await sellItem();
+                                setMetadataForChat({...metadataForChat, isReadOnly: true});
+                                setConfirmingSelling(false);
+                            }}
+                            className="mr-[50px] w-[90px] h-[50px] rounded-[10px] bg-[#FF9E21]"
+                        >Yes</button>
+                        <button 
+                            onClick={(e) => {setConfirmingSelling(false);}} 
+                            className="w-[90px] h-[50px] border-[2px] border-[#FF9E21] rounded-[10px] text-[#FF9E21]"
+                        >No</button>                 
+                    </div>
+                </div>
+          </div>      
+        );
+    }
+    
+    function Header(){
+        const sellButtonShouldAppear = (metadataForChat.selfIsSeller && !metadataForChat.isReadOnly);
+      
+        return (
+            <div className="h-[80px] bg-[#370A00]">
                 <img src={metadataForChat.otherUserProfilePictureURL}
                     alt='Other chatting user profile'
                     className="inline-block rounded-[30px] h-[60px] w-[60px] mt-[10px] ml-[12vw] mr-[30px]"
                 />
                 <label className="inline-block align-middle mr-[15px] text-[30px] font-semibold">{metadataForChat.otherUserName}</label>
                 <label className="inline-block align-middle mt-[2px] text-[24px] font-semibold"> on "{metadataForChat.itemName}"</label>
-            </div>
-            
-            <div className="overflow-y-auto w-[100vw] h-[70vh] pl-[12vw] pr-[12vw] pt-[50px] bg-[#FFDEB8]">
+                {
+                    sellButtonShouldAppear
+                    && <button 
+                        onClick={(e) => {setConfirmingSelling(true);}}
+                        className="inline-block float-right mr-[12vw] mt-[10px] w-[90px] h-[50px] rounded-[10px] text-[24px] font-semibold bg-[#C93400]"
+                        >Sell</button>
+                }
+            </div>        
+        );
+    }
+    
+    return (
+        <div className="w-[99.2vw] h-[100vh] bg-[#FFDEB8]">
+            {
+                confirmingSelling && <SellConfirmPopup/>
+            }
+
+            <Header/>
+            <div className="overflow-y-auto w-[100%] h-[70vh] pl-[12vw] pr-[12vw] pt-[50px] bg-[#FFDEB8]">
             {
                 chatObjects.map(chatObject => <ChatBubble chatObject={chatObject}/>)
             }
@@ -207,13 +280,17 @@ export default function ChatPage({APIDomain, JWTToken, userID, otherChatUserID, 
             <div className="absolute left-[12vw] rounded-[15px] bg-white w-[75vw] h-[50px]">
                 <textarea
                     value={typingText}
+                    placeholder={metadataForChat.isReadOnly ? "The item has been sold." : "Your message here..."}
                     onChange={(htmlEvent) => {
-                        setTypingText(htmlEvent.target.value.substr(FIRST_CHARACTER, MAX_SENDING_TEXT_CHARACTERS));
+                        if(!metadataForChat.isReadOnly){
+                            setTypingText(htmlEvent.target.value.substr(FIRST_CHARACTER, MAX_SENDING_TEXT_CHARACTERS));
+                        }
                     }}
                     className="w-[80%] h-[100%] resize-none ml-[20px] p-[10px] pt-[12px] border-0 outline-none text-black bg-white overflow-y-auto"
                 />
                 <img onClick={sendMessage} src="/chatsend.png" className="float-right h-[30px] mr-[20px] mt-[10px]" alt='send button'/>
-            </div>
+            </div>            
+
             <p style={{color: 'red'}}>{error}</p>
         </div>
     );
