@@ -57,10 +57,9 @@ function App() {
 			break;
 		case('Your Page'):
 			displayPage = <Profile
-				profileAPIURL={apiURL + '/profile'}
-				changePasswordAPIURL={apiURL + '/profile/password'}
 				userObject={userObject}
 				setUserObject={setUserObject}
+        API_URL={apiURL}
 			/>
 			break;
 		case('Item'):

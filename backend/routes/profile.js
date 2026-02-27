@@ -76,11 +76,11 @@ router.put("/password", verifyToken, async (req, res) => {
       _id: new ObjectId(req.user.userId)
     });
 	
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(404).json({ message: "User not found." });
 
     const isMatch = await bcrypt.compare(currentPassword, user.hashedPassword);
     if (!isMatch) {
-      return res.status(400).json({ message: "Current password incorrect" });
+      return res.status(400).json({ message: "Current password incorrect." });
     }
 
     const newHash = await bcrypt.hash(newPassword, 10);
@@ -90,7 +90,7 @@ router.put("/password", verifyToken, async (req, res) => {
       { $set: { hashedPassword: newHash } }
     );
 
-    res.json({ message: "Password updated successfully" });
+    res.json({ message: "Password updated successfully." });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
