@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { IoTrashBin, IoAddSharp } from 'react-icons/io5';
 import {
   getMyItems,
   createItem,
@@ -6,9 +7,14 @@ import {
   updateItem
 } from "./MyItems_api.js";
 
+import ItemWindow from '../components/CreateItemWindow.jsx'
+
 export default function MyItems({ token, API_URL}) {
   const [items, setItems] = useState([]);
-  const [editingId, setEditingId] = useState(null);
+  const [itemWindowItem, setItemWindowItem] = useState(null);
+  const [deletingItem, setDeletingItem] = useState({});
+  const [promptDelete, setPromptDelete] = useState(false);
+  const [itemWindowPopup, setItemWindowPopup] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -47,63 +53,102 @@ export default function MyItems({ token, API_URL}) {
 
     loadItems();
   }
-
-  async function handleUpdate(id) {
-    await updateItem(token, id, {
-      ...form,
-      priceTHB: Number(form.priceTHB),
-      categories: form.categories.split(",").map(c => c.trim())
-    }, API_URL);
-
-    setEditingId(null);
-    loadItems();
+  
+  function ItemDeletePopup(){
+    return (
+        <div className="absolute block flex justify-center items-center top-0 left-0 w-[99.2vw] h-[100vh] bg-[rgba(255,255,255,0.5)]">
+            <div className="flex flex-col items-center">
+                <h2 className="pt-[15px] pl-[30px] text-[30px] text-[#FF9E21] font-bold text-center">Delete "{deletingItem.name}"?</h2>
+                <div className="left-[50%] mt-[20px]">
+                    <button
+                        onClick={async () => {
+                            await deleteItem(token, deletingItem._id, API_URL);
+                            await loadItems();
+                            setPromptDelete(false);
+                        }}
+                        className="mr-[50px] w-[90px] h-[50px] rounded-[10px] bg-[#FF9E21]"
+                    >Yes</button>
+                    <button 
+                        onClick={(e) => {setPromptDelete(false);}} 
+                        className="w-[90px] h-[50px] border-[2px] border-[#FF9E21] rounded-[10px] text-[#FF9E21]"
+                    >No</button>                 
+                </div>
+            </div>
+      </div>      
+    );
   }
-
-  function startEdit(item) {
-    setEditingId(item._id);
-    setForm({
-      name: item.name,
-      imageURL: item.imageURL,
-      priceTHB: item.priceTHB,
-      categories: item.categories.join(', '),
-      details: item.details
-    });
+  
+  function ItemContainer({item}){
+    function showEditingWindow(_){
+      setItemWindowItem(itemWindowItem => item);
+      setItemWindowPopup(true);
+    }
+    
+    const commaForThousandAndPeriodForFraction = 'en-US';
+  
+    return (
+      <button 
+        className="flex-none inline-block w-[250px] h-[350px] mb-[30px] mr-[30px] text-left">
+      
+        <img 
+          onClick={showEditingWindow}
+          src={item.imageURL} 
+          alt="" 
+          className="relative top-0 w-[100%] h-[150px] object-cover"
+        />
+        <div className="relative h-[170px] bg-[#8C3F27] p-[10px]">
+          <div onClick={showEditingWindow}>
+            <h3 className="text-[22px] font-bold">{item.name}</h3>
+            <p className="pt-[5px] text-[15px] font-semibold">{item.priceTHB.toLocaleString(commaForThousandAndPeriodForFraction)}฿</p>
+          </div>
+          <IoTrashBin 
+            onClick={async (_) => {
+              setDeletingItem(deletingItem => item);
+              setPromptDelete(true);
+            }}
+            className="absolute right-[0px] bottom-[10px] mt-auto mb-0 mr-[20px] h-[30px]"
+          />
+        </div>
+      </button>
+    );
+  }
+  
+  function CreateItemButton(){
+    return (
+      <button 
+        onClick={(_) => {
+          setItemWindowItem(itemWindowItem => null);
+          setItemWindowPopup(true);
+        }}
+        className="mt-[20px] flex items-center w-[120px] h-[50px] rounded-[10px] bg-[#7C2808]">
+        <IoAddSharp size={40} className="inline-block ml-[5px] mr-[5px]"/>
+        <span className="font-semibold text-[18px]">Create</span>
+      </button>
+    );
   }
 
   return (
-    <div>
-      <h2>My Items</h2>
+    <div className="w-[99.2vw] h-[100vh] bg-[#FEECD3] p-[35px]"> 
+      <h1 className="mt-[-20px] text-[48px] font-[700] text-[#7C2808]">My Items</h1>
+      <CreateItemButton/>
 
-      {/* ---------- CREATE / EDIT FORM ---------- */}
-      <input name="name" placeholder="Name" value={form.name} onChange={handleChange} />
-      <input name="imageURL" placeholder="Image URL" value={form.imageURL} onChange={handleChange} />
-      <input name="priceTHB" placeholder="Price" value={form.priceTHB} onChange={handleChange} />
-      <input name="categories" placeholder="Category (comma separated)" value={form.categories} onChange={handleChange} />
-      <textarea name="details" placeholder="Description" value={form.details} onChange={handleChange} />
-
-      {editingId ? (
-        <button onClick={() => handleUpdate(editingId)}>Update Item</button>
-      ) : (
-        <button onClick={handleCreate}>Add Item</button>
-      )}
-
-      <hr />
-
-      {/* ---------- ITEM LIST ---------- */}
-      {items.map(item => (
-        <div key={item._id} style={{ border: "1px solid #ccc", margin: 10, padding: 10 }}>
-          <h3>{item.name}</h3>
-          <img src={item.imageURL} alt="" width="150" />
-          <p>Price: {item.priceTHB}</p>
-          <p>Category: {item.categories.join(", ")}</p>
-          <p>{item.details}</p>
-
-          <button onClick={() => startEdit(item)}>Edit</button>
-          <button onClick={() => deleteItem(token, item._id, API_URL).then(loadItems)}>
-            Delete
-          </button>
-        </div>
-      ))}
+      <div className="flex flex-wrap mt-[20px]">
+        {items.map(item => <ItemContainer item={item}/>)}
+      </div>
+      
+      {promptDelete && <ItemDeletePopup/>}   
+      {
+        itemWindowPopup && 
+        <ItemWindow 
+          closeWindow={() => {
+            setItemWindowPopup(false);
+          }}
+          item={itemWindowItem}
+          token={token}
+          API_URL={API_URL}
+          updateMyItemsPage={loadItems}
+        />
+      }
     </div>
   );
 }

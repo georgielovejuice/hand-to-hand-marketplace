@@ -44,22 +44,22 @@ export default function myItemsRoute(getDB) {
 
   /* ---------- POST: create item ---------- */
   router.post("/", async (req, res) => {
-
     
     const userId = req.user.userId;
     if (!userId) {
       return res.status(401).json({ error: "Missing credentials" });
     }
 
-    const { name, imageURL, priceTHB, categories, details } = req.body;
+    const { name, imageURL, priceTHB, categories, condition, details } = req.body;
+    
     const db = getDB();
-
     await db.collection("Item").insertOne({
       name,
-      imageURL,
       priceTHB,
       categories,
       details,
+      condition,
+      imageURL,
       ownerId: req.user.userId,
       createdAt: new Date(),
       summary: await getItemSummary(name, categories, details)
@@ -99,25 +99,25 @@ export default function myItemsRoute(getDB) {
     const item = req.body;
 
     const result = await db.collection("Item").updateOne(
-        {
-          _id: new ObjectId(id),
-          ownerId: req.user.userId
-        },
-        { 
-          $set: {
-            ...item, 
-            updatedAt: new Date(),
-            summary: await getItemSummary(item.name, item.categories, item.details)
-          } 
-        }
-      );
+      {
+        _id: new ObjectId(id),
+        ownerId: req.user.userId
+      },
+      { 
+        $set: {
+          ...item, 
+          updatedAt: new Date(),
+          summary: await getItemSummary(item.name, item.categories, item.details)
+        } 
+      }
+    );
 
     if (result.matchedCount === 0) {
         return res.status(404).json({ error: "Item not found or not yours" });
     }
 
     res.json({ success: true });
-    });
+  });
 		
 	router.get("/:itemID", async (request, response) => {
 		/*
