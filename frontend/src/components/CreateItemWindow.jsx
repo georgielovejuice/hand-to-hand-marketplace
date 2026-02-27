@@ -6,14 +6,14 @@ export default function CreateItem({item, closeWindow, token, API_URL, updateMyI
   const EDITING_ITEM = 1;
   const windowAction = item ? EDITING_ITEM : CREATING_ITEM;
   
-  const [title, setTitle] = useState(item ? item.name : "");
-  const [description, setDescription] = useState(item ? item.details : "");
-  const [price, setPrice] = useState(item ? item.priceTHB : 0);
+  const [title, setTitle] = useState(item ? String(item.name) : "");
+  const [description, setDescription] = useState(item ? String(item.details) : "");
+  const [price, setPrice] = useState(item ? Number(item.priceTHB) : 0);
   const [typingCategory, setTypingCategory] = useState("");
-  const [categories, setCategories] = useState(item ? item.categories : []);
-  const [condition, setCondition] = useState(item ? item.condition : null);
+  const [categories, setCategories] = useState(item ? Array.from(item.categories) : []);
+  const [condition, setCondition] = useState(item ? String(item.condition) : null);
   
-  const [uploadedImageURL, setUploadedImageURL] = useState(item ? item.imageURL : "");
+  const [uploadedImageURL, setUploadedImageURL] = useState(item ? String(item.imageURL) : "");
   const [preview, setPreview] = useState(item ? item.imageURL : null);
 
   const handleFileUpload = async (e) => {

@@ -6,7 +6,7 @@ export default function Container({ item, setViewingItemID }) {
       
       {
         (item.status === "sold") &&
-        <div className="absolute top-0 left-0 z-10 w-[100%] h-[100%] flex justify-center items-center bg-[rgba(127,127,127,0.9)]">
+        <div className="absolute top-0 left-0 w-[100%] h-[100%] flex justify-center items-center bg-[rgba(127,127,127,0.9)]">
           <p className="font-semibold text-[18px]">This item is sold.</p>
         </div>
       }

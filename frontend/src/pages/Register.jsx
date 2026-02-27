@@ -10,6 +10,7 @@ export default function Register({
     name: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,6 +21,12 @@ export default function Register({
     e.preventDefault();
     setError("");
     setLoading(true);
+    
+    const trimmedPassword = form.password.trim();
+    const trimmedConfirmPassword = form.confirmPassword.trim();
+
+    if(trimmedPassword !== trimmedConfirmPassword)
+      return alert("Passwords not matching.");
 
 		let response = null;
 		const trimmedEmail = form.email.trim();
