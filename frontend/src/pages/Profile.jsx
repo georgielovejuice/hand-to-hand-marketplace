@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
+import {ioPencil} from 'react-icons/io5';
 import axios from 'axios';
 
-import {ProfileSettingBlock, PasswordSettingBlock} from '../components/ProfileComponents.jsx'
+import {ProfileSettingBlock, PasswordSettingBlock, SectionSelectorPanel} from '../components/ProfileComponents.jsx'
 
 export default function Profile({userObject, setUserObject, API_URL}) {
   const [error, setError] = useState("");
   const [currentSection, setCurrentSection] = useState("Profile");
+  const [pfpPreviewURL, setPfpPreviewURL] = useState(null);
+  const [pfpFileToUpload, setPfpFileToUpload] = useState(null);
 
   const [originalForm, setOriginalForm] = useState({
     name: "",
@@ -28,7 +31,8 @@ export default function Profile({userObject, setUserObject, API_URL}) {
           profilePicture: response.data?.profilePicture || "",
         };
 
-        setOriginalForm(nextForm);
+        setOriginalForm(originalForm => nextForm);
+        setPfpPreviewURL(pfpPreviewURL => response.data.profilePicture);
       } catch (fetchError) {
         setError(fetchError.response?.data?.message || "Failed to load profile");
       }
@@ -37,60 +41,114 @@ export default function Profile({userObject, setUserObject, API_URL}) {
     fetchProfile();
   }, []);
   
-  function SectionSelectorPanel(){
-    const inactiveSelectorButtonClass = "w-full bg-[#FFD6A7] text-[#370A00] py-2 rounded-md";
-    const activeSelectorButtonClass = "w-full bg-orange-600 text-white py-2 rounded-md";   
+  useEffect(() => {
+    setPfpPreviewURL(originalForm.profilePicture);
+  }, [originalForm]);
+  
+  async function uploadChanges(form, setSaving, setSuccess){
+    setSaving(true);
+    setError("");
+    setSuccess("");
+    let newPfpURL;
     
-    return (
-      <section className="bg-[#FFCA8D] text-[#370A00] rounded-xl shadow-md p-6 lg:row-span-4 flex flex-col items-center text-center gap-4">
-        <div className="w-28 h-28 rounded-full overflow-hidden border border-gray-300">
-          {originalForm.profilePicture ? (
-            <img
-              src={originalForm.profilePicture}
-              alt="Profile"
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full bg-gray-200" />
-          )}
-        </div>
+    async function uploadPfp(){
+      try {
+        const presignRes = await axios.post(`${API_URL}/uploads/presign`, 
+          {
+            purpose: "item",
+            contentType: pfpFileToUpload.type,
+            fileName: pfpFileToUpload.name,
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: userObject.token,
+            }
+          }
+        );
+        
+        const formData = new FormData();
+        for (const [key, value] of Object.entries(presignRes.data.fields)) {
+          formData.append(key, value);
+        }
+        
+        formData.append("file", pfpFileToUpload);
+        const uploadRes = await fetch(presignRes.data.uploadingURL, {
+          method: "POST",
+          body: formData,
+        });
+        if (!uploadRes.ok) {
+          alert("Image upload failed!");
+          return;
+        }
+        
+        newPfpURL = `${presignRes.data.uploadingURL}${presignRes.data.fields.key}`;
 
-        <p className="text-xl font-semibold">
-          {originalForm.name}
-        </p>
-        <p className="break-all">{originalForm.email}</p>
+      } catch (err) {
+        console.error("Upload error:", err);
+      }
+    };    
+    
+    if(pfpFileToUpload)
+      await uploadPfp();
+    
+    try {
+      await axios.put(`${API_URL}/profile`, 
+        {
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        profilePicture: newPfpURL || form.profilePicture,
+        },
+        {
+          headers:{
+            Authorization: userObject.token
+          }
+        }
+      );
 
-        <button 
-          onClick={(_) => {
-            setCurrentSection("Profile");
-          }}
-          className={currentSection === "Profile" ? activeSelectorButtonClass : inactiveSelectorButtonClass}
-        >Profile Setting</button>
-        <button 
-          onClick={(_) => {
-            setCurrentSection("Password");
-          }}
-          className={currentSection === "Password" ? activeSelectorButtonClass : inactiveSelectorButtonClass}
-        >Change Password</button>
-      </section>
-    );
-  }
+      setOriginalForm({...form, profilePicture: newPfpURL});
+      
+      setUserObject({
+        ...userObject, 
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        profilePictureURL: newPfpURL || form.profilePicture
+      });
+      setSuccess("Profile updated successfully.");
+    } catch (saveError) {
+      setError(saveError.response?.data?.message || "Failed to update profile.");
+    } finally {
+      setSaving(false);
+    }
+  };
+  
 
   return (
     <div className="min-h-screen bg-[#FEECD3]">
       <div className="p-6">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[320px,1fr] gap-6 lg:grid-rows-4">
-          <SectionSelectorPanel/>
+          <SectionSelectorPanel
+            pfpPreviewURL={pfpPreviewURL}
+            setPfpPreviewURL={setPfpPreviewURL}
+            setPfpFileUpload={setPfpFileToUpload}
+            currentSection={currentSection}
+            setCurrentSection={setCurrentSection}
+            originalForm={originalForm}
+          />
 
           {
             currentSection === "Profile" && 
             <ProfileSettingBlock
               setError={setError}
               error={error}
-              userToken={userObject.token}
               originalForm={originalForm}
-              setOriginalForm={setOriginalForm}
-              API_URL={API_URL}
+              saveChanges={uploadChanges}
+              revertLocalPfp={(_) => {
+                setPfpPreviewURL(originalForm.profilePicture);
+                setPfpFileToUpload(null);
+              }}
             />
           }
           {
