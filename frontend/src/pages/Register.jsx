@@ -21,16 +21,21 @@ export default function Register({
     e.preventDefault();
     setError("");
     setLoading(true);
+
+		const trimmedEmail = form.email.trim();
+		const trimmedName = form.name.trim();
+    if(!trimmedName)
+      return setError("Username cannot be blank.");
+    if(!trimmedEmail)
+      return setError("Email cannot be blank.");
     
     const trimmedPassword = form.password.trim();
     const trimmedConfirmPassword = form.confirmPassword.trim();
 
     if(trimmedPassword !== trimmedConfirmPassword)
-      return alert("Passwords not matching.");
+      return setError("Passwords not matching.");
 
 		let response = null;
-		const trimmedEmail = form.email.trim();
-		const trimmedName = form.name.trim();
     try {
 			/*
 			Based on Window.fetch(), raises
@@ -163,6 +168,12 @@ export default function Register({
             {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
           </button>
         </div>
+        
+        {
+          error &&
+          <p className="inline-block md:col-span-2 rounded-[5px] mt-[30px] p-[15px] bg-white text-red-500 font-semibold"
+          >{error}</p>
+        }
 
         <div className='mt-10 flex flex-col justify-center items-center'>
           <button
@@ -172,7 +183,7 @@ export default function Register({
             Sign up
           </button>
 
-          <p className='mt-1 text-black text-lg'>
+          <p className='mt-[30px] text-black text-lg'>
             Already have an account?{" "}
             <button onClick={redirectToLogin} className="text-orange-400 font-semibold">Log in</button>
           </p>

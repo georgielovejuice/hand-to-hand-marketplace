@@ -34,9 +34,10 @@ app.post('/api', async (request, response) => {
 			default: response.json({error: "Invalid requested service type"});
 		}
 	}catch(error){
-		if(error instanceof SyntaxError)
+		if(error instanceof SyntaxError){
+      console.log(error)
 			response.json({error: "Invalid service request JSON."});
-		else{
+		}else{
 			const serverErrorCode = 500;
 			console.log(error);
 			response.sendStatus(serverErrorCode);

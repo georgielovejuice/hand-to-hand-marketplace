@@ -55,7 +55,7 @@ router.post("/register", async (req, res) => {
     const { name, email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password required" });
+      return res.status(400).json({ message: "Email and password required." });
     }
 
     const db = mongoClient.db("User");
@@ -63,7 +63,7 @@ router.post("/register", async (req, res) => {
 
     const existing = await users.findOne({ email });
     if (existing) {
-      return res.status(400).json({ message: "Email already exists" });
+      return res.status(400).json({ message: "Email already exists." });
     }
     
     const emailState = isValidUniversityEmail(email);
@@ -90,12 +90,12 @@ router.post("/register", async (req, res) => {
     await users.insertOne(newUser);
 
     res.status(201).json({
-      message: "User registered successfully"
+      message: "User registered successfully."
     });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error." });
   }
 });
 
@@ -108,12 +108,12 @@ router.post("/login", async (req, res) => {
 
     const user = await users.findOne({ email });
     if (!user) {
-      return res.status(400).json({ message: "Invalid email or password" });
+      return res.status(400).json({ message: "Invalid email or password." });
     }
 
     const isMatch = await bcrypt.compare(password, user.hashedPassword);
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid email or password" });
+      return res.status(400).json({ message: "Invalid email or password." });
     }
 
     const token = jwt.sign(
@@ -131,7 +131,7 @@ router.post("/login", async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error." });
   }
 });
 

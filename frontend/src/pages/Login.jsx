@@ -123,7 +123,13 @@ export default function Login({
             {showPassword ? <FaEyeSlash /> : <FaEye />}
           </button>
         </div>
-
+    
+        {
+          error &&
+          <p className="inline-block md:col-span-2 rounded-[5px] mt-[30px] p-[15px] bg-white text-red-500 font-semibold"
+          >{error}</p>
+        }
+        
         <div className='mt-10 flex flex-col justify-center items-center'>
           <button
             type="submit"
@@ -132,7 +138,7 @@ export default function Login({
             Login
           </button>
 
-          <p className='mt-1 text-black text-lg'>
+          <p className='mt-[30px] text-black text-lg'>
             If you don't have an account{" "}
             <button onClick={redirectToRegister} className="text-orange-400 font-semibold">Sign up</button>
           </p>
