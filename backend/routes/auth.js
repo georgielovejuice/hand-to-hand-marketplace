@@ -8,6 +8,49 @@ const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key";
 const SALT_ROUNDS = 10;
 
 router.post("/register", async (req, res) => {
+  const EMAIL_OK = 0;
+  const INVALID_EMAIL_FORM = 1;
+  const INVALID_STAFF_EMAIL = 2;
+  const INVALID_STUDENT_EMAIL = 3;
+  
+  function isValidUniversityEmail(email){
+    const FIRST_CHARACTER = 0;
+    const NO_DECIMAL_POINT = 0;
+    const VALID_STAFF_EMAIL_NAMES = [
+      "alice",
+      "bob",
+      "charlie",
+      "amnach.kh",
+      "rattachai.ch",
+      "surin.ki",
+    ];
+    
+    const trimmedEmail = email.trim();
+    if(trimmedEmail.includes(' ')) return INVALID_EMAIL_FORM;
+    
+    const atSymbolIndex = trimmedEmail.indexOf("@");
+    const noAtSymbol = atSymbolIndex < 0;
+    if(noAtSymbol) return INVALID_EMAIL_FORM;
+    
+    const hasDuplicateAtSymbol = trimmedEmail.includes("@", atSymbolIndex+1);
+    if(hasDuplicateAtSymbol) return INVALID_EMAIL_FORM;
+    
+    const isKMITLDomain = trimmedEmail.endsWith("@kmitl.ac.th") && !(trimmedEmail.startsWith("@kmitl.ac.th"));
+    if(!isKMITLDomain) return INVALID_EMAIL_FORM;
+    
+    const emailName = trimmedEmail.substr(FIRST_CHARACTER, atSymbolIndex);
+    const emailNameAsNumber = Number.parseFloat(emailName);
+    const isNotStudentEmail = Number.isNaN(emailNameAsNumber);
+    if(isNotStudentEmail)
+      return VALID_STAFF_EMAIL_NAMES.includes(emailName) ? EMAIL_OK : INVALID_STAFF_EMAIL;
+    
+    const emailNameIsFloatingPoint = emailNameAsNumber !== Number.parseInt(emailName);
+    if(emailNameIsFloatingPoint) return INVALID_STUDENT_EMAIL;
+    
+    const inStudentIDRange = (emailNameAsNumber >= 50000000) && (emailNameAsNumber < 69000000);
+    return inStudentIDRange ? EMAIL_OK : INVALID_STUDENT_EMAIL;
+  }
+  
   try {
     const { name, email, password } = req.body;
 
@@ -21,6 +64,16 @@ router.post("/register", async (req, res) => {
     const existing = await users.findOne({ email });
     if (existing) {
       return res.status(400).json({ message: "Email already exists" });
+    }
+    
+    const emailState = isValidUniversityEmail(email);
+    switch(emailState){
+      case INVALID_EMAIL_FORM: 
+        return res.status(400).json({message: "Invalid form for KMITL given email."});
+      case INVALID_STAFF_EMAIL:
+        return res.status(400).json({message: "Unrecognised KMITL staff/lecturer email."});
+      case INVALID_STUDENT_EMAIL:
+        return res.status(400).json({message: "Invalid KMITL student email."});
     }
 
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
