@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import axios from 'axios';
+import { useState } from "react";
 
 export default function CreateItem({item, closeWindow, token, API_URL, updateMyItemsPage}) {
   const CREATING_ITEM = 0;
@@ -15,73 +14,100 @@ export default function CreateItem({item, closeWindow, token, API_URL, updateMyI
   
   const [uploadedImageURL, setUploadedImageURL] = useState(item ? String(item.imageURL) : "");
   const [preview, setPreview] = useState(item ? item.imageURL : null);
+  
+  const [error, setError] = useState("");
 
   const handleFileUpload = async (e) => {
+    setError("");
     const file = e.target.files[0];
     if (!file) return;
 
-    setPreview(URL.createObjectURL(file));
+    let presignRes;
     try {
-      const presignRes = await axios.post(`${API_URL}/uploads/presign`, 
-        {
+      presignRes = await fetch(`${API_URL}/uploads/presign`, {
+        method: "POST",
+        body: JSON.stringify({
           purpose: "item",
           contentType: file.type,
           fileName: file.name,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: token,
-          }
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: token,
         }
-      );
+      });
+    }catch(err){
+      if(err instanceof TypeError) 
+        return setError("Could not connect to server for file upload URL.");
+      throw err;
+    }
+    
+    let objectFromResponse;
+    try{
+      objectFromResponse = await presignRes.json();
+    }catch(err){
+      if(err instanceof TypeError)
+        return setError("Could not decode response from server.");
+      if(err instanceof SyntaxError)
+        return setError("Could not parse JSON from server.");
+      throw err;
+    }
+    
+    if(!presignRes.ok)
+      return setError(objectFromResponse.message || `Received HTTP status ${presignRes.status} from server.`);
       
-      const formData = new FormData();
-      for (const [key, value] of Object.entries(presignRes.data.fields)) {
-        formData.append(key, value);
-      }
-      
-      formData.append("file", file);
-      const uploadRes = await fetch(presignRes.data.uploadingURL, {
+    const formData = new FormData();
+    for (const [key, value] of Object.entries(objectFromResponse.fields)) {
+      formData.append(key, value);
+    }
+    formData.append("file", file);
+    
+    let uploadRes;
+    try{
+      uploadRes = await fetch(objectFromResponse.uploadingURL, {
         method: "POST",
         body: formData,
       });
-      if (!uploadRes.ok) {
-        alert("Image upload failed!");
-        return;
-      }
-
-      setUploadedImageURL(`${presignRes.data.uploadingURL}${presignRes.data.fields.key}`);
-
-    } catch (err) {
-      console.error("Upload error:", err);
+    }catch(err){
+      if(err instanceof TypeError)
+        return setError("Could not connect to web storage for image upload.");
     }
+    if(!uploadRes.ok)
+      return setError(`Received HTTP status ${uploadRes.status} from web storage.`);    
+
+    setPreview(URL.createObjectURL(file));
+    setUploadedImageURL(`${objectFromResponse.uploadingURL}${objectFromResponse.fields.key}`);
   };
 
   // ================= SUBMIT =================
   const handleSubmit = async () => {    
+    setError("");
     try {
-      await axios({
+      const response = await fetch(`${API_URL}/myitems/` + (windowAction === EDITING_ITEM ? item._id : ''), {
         method: (windowAction === EDITING_ITEM) ? "PUT" : "POST",
-        url: `${API_URL}/myitems/` + (windowAction === EDITING_ITEM ? item._id : ''), 
         headers: {
           'Content-Type': 'application/json', 
           Authorization: token,
         },
-        data: {
+        body: JSON.stringify({
           name: title,
           priceTHB: Number(price),
           categories: categories,
           details: description,
           condition: condition,
           imageURL: uploadedImageURL,
-        }, 
+        }), 
       });
+      
+      if(!response.ok)
+        return setError("Received HTTP status " + response.status + " from server.");
       
       updateMyItemsPage();
       closeWindow();
     } catch (err) {
-      console.error(err.response?.data || err);
+      if(err instanceof TypeError)
+        return setError("Could not save item. Lost connection to server.");
+      throw err;
     }
   };
 
@@ -92,7 +118,7 @@ export default function CreateItem({item, closeWindow, token, API_URL, updateMyI
     }
     
     return (
-      <div className="inline-block h-[30px] border-[2px] mr-[10px] border-solid pl-[10px] pr-[10px] rounded-[15px] font-semibold">
+      <div className="inline-block h-[30px] border-[2px] mr-[10px] mb-[10px] border-solid pl-[10px] pr-[10px] rounded-[15px] font-semibold">
         <p className="inline-block"
         >{value}</p>
         <button 
@@ -105,7 +131,7 @@ export default function CreateItem({item, closeWindow, token, API_URL, updateMyI
 
   return (
     <div className="fixed top-0 left-0 w-[99.5vw] h-[100vh] bg-[rgba(217,195,168,0.75)] flex justify-center py-16">
-      <div className="w-2/3 max-w-6xl bg-[#e6d2b9] p-10 rounded-lg shadow-lg flex gap-12">
+      <div className="w-2/3 overflow-y-auto max-w-6xl bg-[#e6d2b9] p-10 rounded-lg shadow-lg flex gap-12">
 
         {/* ================= LEFT SIDE IMAGE ================= */}
         <div className="flex flex-col items-center gap-6 w-1/3">
@@ -139,6 +165,12 @@ export default function CreateItem({item, closeWindow, token, API_URL, updateMyI
           <p className="text-sm text-gray-600">
             Click the box to upload item image
           </p>
+          
+          {
+            error &&
+            <p className="inline-block md:col-span-2 rounded-[5px] mt-[0px] p-[15px] bg-white text-red-500 font-semibold"
+            >{error}</p>
+          }
         </div>
 
         {/* ================= RIGHT SIDE FORM ================= */}
@@ -202,7 +234,7 @@ export default function CreateItem({item, closeWindow, token, API_URL, updateMyI
             <label className="block mb-2 font-semibold text-gray-700">
               Category
             </label>
-            <div className="flex mt-[10px] mb-[10px]">
+            <div className="flex-row mt-[10px] mb-[10px]">
               {
                 categories.map(category =>
                 <MuiChip value={category}/>)
@@ -247,7 +279,7 @@ export default function CreateItem({item, closeWindow, token, API_URL, updateMyI
           <div className="flex gap-4">
             <button
               onClick={handleSubmit}
-              className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded font-medium transition"
+              className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 mb-[10px] rounded font-medium transition"
             >
             {(windowAction === CREATING_ITEM) ? "Upload Item" : "Make Changes"}
             </button>

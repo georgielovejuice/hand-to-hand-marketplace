@@ -25,7 +25,7 @@ export default function ChatsPage({APIDomain, JWTToken, userID, redirectToChatPa
                         <p className="font-semibold text-[24px]">Item is sold.</p>
                     </div>
                 }
-                <img className="float-left object-cover w-[120px] h-[100%]" src={chatPreviewObject.itemImageURL}>
+                <img className="float-left object-cover w-[120px] h-[100%]" src={chatPreviewObject.itemImageURL} alt="item">
                 </img>
                 <div className="float-left ml-[20px]">
                     <h3 className="mt-[8px] text-left font-semibold text-[22px] text-[#FFD6A7]">{truncateString(chatPreviewObject.itemName, 40)}</h3>
@@ -39,6 +39,7 @@ export default function ChatsPage({APIDomain, JWTToken, userID, redirectToChatPa
     }
 
     async function fetchChatPreviews(){
+        setErrorMessage("");
         let response = null;
         try {
             /*
@@ -97,13 +98,28 @@ export default function ChatsPage({APIDomain, JWTToken, userID, redirectToChatPa
             setMsSinceLastMessageFetch(msSinceLastMessageFetch => msSinceLastMessageFetch + MILLISECONDS_BETWEEN_MESSAGE_FETCH);
         }, MILLISECONDS_BETWEEN_MESSAGE_FETCH);
         if(msSinceLastMessageFetch < MILLISECONDS_BETWEEN_MESSAGE_FETCH) return () => clearInterval(intervalID);
-        fetchChatPreviews();
+        if(!errorMessage) fetchChatPreviews();
         setMsSinceLastMessageFetch(0);
         return () => clearInterval(intervalID);
     }, [msSinceLastMessageFetch]);
 
     return(
         <div className="w-[100%] h-[100%] bg-[#FEECD3]">
+            {
+              errorMessage &&
+              <div className="absolute z-10 flex flex-col justify-center items-center w-full h-full bg-[rgba(255,255,255,0.9)]">
+                  <p className="font-[500] text-[24px] text-red-500">
+                    {errorMessage}          
+                  </p>
+                  <button
+                      onClick={(_) => {
+                        fetchChatPreviews();
+                      }}
+                      className="mt-[20px] w-[90px] h-[50px] rounded-[10px] bg-[#FF9E21]"
+                  >Reload</button>  
+              </div>
+            }        
+        
             <h1 className="text-[48px] ml-[35px] pt-[15px] font-[700] text-[#7C2808]">Chats</h1>
             <div className="overflow-y-auto overflow-x-auto w-[75vw] h-[80vh] mt-[30px] ml-[12vw]">
             {

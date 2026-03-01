@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import SearchBar from '../components/Searchbar'
 import Container from '../components/Container'
-import axios from "axios";
-
 export default function BrowsePage({apiURL, userID, setViewingItemID}) {
     const [items, setItems] = useState([]);
     const [error, setError] = useState("");
@@ -53,7 +51,6 @@ export default function BrowsePage({apiURL, userID, setViewingItemID}) {
     }
 
   useEffect(() => {
-
     fetchItems()
   }, [searchText])
   
@@ -87,7 +84,8 @@ export default function BrowsePage({apiURL, userID, setViewingItemID}) {
       <SearchBar setSearchText={setSearchText} fetchItems={fetchItems}></SearchBar>
       <div className='flex justify-center flex-wrap gap-9 p-6'>
       {items.map((item) => (
-        <Container item={item} setViewingItemID={setViewingItemID}/>
+        //Added key because console was complaining.
+        <Container item={item} key={item._id} setViewingItemID={setViewingItemID}/>
       ))}
       </div>
     </div>

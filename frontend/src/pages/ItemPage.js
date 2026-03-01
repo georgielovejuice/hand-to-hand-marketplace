@@ -6,87 +6,78 @@ export default function ItemPage({itemAPIURL, JWTToken, userID, redirectToChatPa
 	const [primaryItemImageIndex, setPrimaryItemImageIndex] = useState(0);
 	const [error, setError] = useState('');
 	
-	function RatingContainer(){
-		const starImages = [];
-		const ratingAsInteger = itemObject.rating.toFixed();		
-		for(let i = 0; i < ratingAsInteger; i++){
-			starImages.push(<img src="https://pngimg.com/uploads/star/star_PNG41474.png" alt="" className="inline-block w-[20px] h-[20px] mr-[5px]"/>);
-		}
-		
-		return <div>{starImages}</div>
-	}
-	
 	function changePrimaryItemImageIndex(htmlEventFromImg){
 		const imgElement = htmlEventFromImg.target;
 		const imageURL = imgElement.src;
 		const indexOfImageURL = itemImageURLs.indexOf(imageURL);
 		setPrimaryItemImageIndex(indexOfImageURL);
 	}
+
+  async function getItem(){
+    let response;
+    try{
+      /*
+      Based on Window.fetch(), raises
+      - AbortError if abort() is called
+      - TypeError if
+        - request URL is invalid
+        - request blocked by permissions policy
+        - network error
+      - from await
+      */
+      response = await fetch(itemAPIURL, {
+        method: "GET",
+        headers: {authorization: JWTToken}
+      });
+    }catch(err){
+      //No catch for AbortError, React couldn't find its definition
+      if(err instanceof TypeError) setError("Couldn't connect to the server.");
+      else setError("Error: " + err);
+      return;
+    }
+    
+    try{
+      /*
+      Raises
+      - AbortError if abort() is called
+      - TypeError if couldn't decode response body
+      - SyntaxError if body couldn't be parsed as json
+      - something from await
+      */
+      const objectFromResponse = await response.json();
+      if(!(response.ok)){
+        setError(objectFromResponse.message ? objectFromResponse.message 
+                  : "Received HTTP status " + response.status + " from server.");
+        return;
+      }
+
+      if((typeof objectFromResponse._id) !== "string"){
+        setError("._id attribute of received item object is not a string.");
+        return;
+      }else if(!(objectFromResponse.categories instanceof Array)){
+        setError(".categories attribute of received item object is not Array type.");
+        return;
+      }
+      
+      objectFromResponse.rating = 4.25;
+      setItemObject(objectFromResponse);
+      setItemImageURLs([
+        objectFromResponse.imageURL, 
+        "https://leonardpaper.com/Content/Images/Product/UP-12Wa.jpg",
+        "https://www.chainbaker.com/wp-content/uploads/2023/04/IMG_4692.jpg",
+        "https://funcakes.com/content/uploads/2020/08/Donut-600x450.png",
+        "https://www.cybermodeler.com/aircraft/f-16/images/intro_f-16ccip.jpg"			
+      ]);
+      setError('');
+    }catch (err){
+      //No catch for AbortError, React couldn't find its definition
+      if(err instanceof TypeError) setError("Couldn't decode response body from server.");		
+      else if(err instanceof SyntaxError) setError("Couldn't parse JSON response from server.");						
+      else setError("Error: " + err);
+    }
+  }
 	
 	useEffect(() => {
-		async function getItem(){
-			let response;
-			try{
-				/*
-				Based on Window.fetch(), raises
-				- AbortError if abort() is called
-				- TypeError if
-					- request URL is invalid
-					- request blocked by permissions policy
-					- network error
-				- from await
-				*/
-				response = await fetch(itemAPIURL, {
-					method: "GET",
-					headers: {authorization: JWTToken}
-				});
-			}catch(err){
-				//No catch for AbortError, React couldn't find its definition
-				if(err instanceof TypeError) setError("Couldn't connect to the server.");
-				else setError("Error: " + err);
-				return;
-			}
-			
-			try{
-				/*
-				Raises
-				- AbortError if abort() is called
-				- TypeError if couldn't decode response body
-				- SyntaxError if body couldn't be parsed as json
-				- something from await
-				*/
-				const objectFromResponse = await response.json();
-				if(!(response.ok)){
-					setError(objectFromResponse.message ? objectFromResponse.message 
-										: "Received HTTP status " + response.status + " from server.");
-					return;
-				}
-
-				if((typeof objectFromResponse._id) !== "string"){
-					setError("._id attribute of received item object is not a string.");
-					return;
-				}else if(!(objectFromResponse.categories instanceof Array)){
-					setError(".categories attribute of received item object is not Array type.");
-					return;
-				}
-				
-				objectFromResponse.rating = 4.25;
-				setItemObject(objectFromResponse);
-				setItemImageURLs([
-					objectFromResponse.imageURL, 
-					"https://leonardpaper.com/Content/Images/Product/UP-12Wa.jpg",
-					"https://www.chainbaker.com/wp-content/uploads/2023/04/IMG_4692.jpg",
-					"https://funcakes.com/content/uploads/2020/08/Donut-600x450.png",
-					"https://www.cybermodeler.com/aircraft/f-16/images/intro_f-16ccip.jpg"			
-				]);
-				setError('');
-			}catch (err){
-				//No catch for AbortError, React couldn't find its definition
-				if(err instanceof TypeError) setError("Couldn't decode response body from server.");		
-				else if(err instanceof SyntaxError) setError("Couldn't parse JSON response from server.");						
-				else setError("Error: " + err);
-			}
-		}
 		getItem();
 	}, 
 	[JWTToken, itemAPIURL]);
@@ -106,8 +97,23 @@ export default function ItemPage({itemAPIURL, JWTToken, userID, redirectToChatPa
   }
 
 	return (
-		<div className="w-[100vw] h-[100vh] pl-[30px] pt-[30px] bg-[#FEECD3]">
-    <div className="float-left max-w-[15%] max-h-[85vh] mr-[30px] overflow-y-auto">
+		<div className="w-[99.2vw] h-[100vh] pl-[30px] pt-[30px] bg-[#FEECD3]">
+    {
+      error &&
+      <div className="absolute ml-[-30px] mt-[-30px] z-10 flex flex-col justify-center items-center w-full h-full bg-[rgba(255,255,255,0.9)]">
+          <p className="font-[500] text-[24px] text-red-500">
+            {error}          
+          </p>
+          <button
+              onClick={(_) => {
+                getItem();
+              }}
+              className="mt-[20px] w-[90px] h-[50px] rounded-[10px] bg-[#FF9E21]"
+          >Reload</button>  
+      </div>
+    }
+    
+      <div className="float-left max-w-[15%] max-h-[85vh] mr-[30px] overflow-y-auto">
 			{
 				itemImageURLs.map(url => <img onClick={changePrimaryItemImageIndex} src={url} alt="" className="w-[100%] mb-[30px]"/>)
 			}
@@ -124,9 +130,7 @@ export default function ItemPage({itemAPIURL, JWTToken, userID, redirectToChatPa
 				<h3 className="text-wrap mt-[15px] text-[24px] font-bold text-[#7C2808]">Item Description</h3>
 				<p className="text-wrap text-[20px] text-[#7C2808]">{itemObject.details}</p>
 				<h3 className="text-wrap mt-[30px] text-[24px] font-bold text-[#7C2808]">Item Condition</h3>
-				<div>
-				<RatingContainer/>
-				</div>
+				<p className="text-wrap text-[20px] text-[#7C2808]">{itemObject.condition}</p>        
 				
 				<p className="inline-block text-wrap mr-[30px] mt-[20px] text-[30px] text-[#7C2808]">Price: {itemObject.priceTHB}฿</p>
         <ChatButtonArea/>

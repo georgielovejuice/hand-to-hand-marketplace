@@ -17,10 +17,9 @@ export default function Navbar({
         </div>
 
         <div className='flex'>
-            <div onClick={redirectToMyListingsPage} className="px-3 py-2 text-md text-black text-lg hover:underline transition hover:bg-orange-700">My Items</div>
             <div onClick={redirectToBrowsePage} className="px-3 py-2 text-md text-black text-lg hover:underline transition hover:bg-orange-700">Marketplace</div>
             <div onClick={redirectToChatsPage} className="px-3 py-2 text-md text-black text-lg hover:underline transition hover:bg-orange-700">Chats</div>
-            <div className="px-3 py-2 text-md text-black text-lg hover:underline transition hover:bg-orange-700">Cart</div>
+            <div onClick={redirectToMyListingsPage} className="px-3 py-2 text-md text-black text-lg hover:underline transition hover:bg-orange-700">My Items</div>
 
             <div className="ml-[15px] mr-[15px] dropdown dropdown-end">
                 <label tabIndex={0} className="btn btn-ghost btn-circle avatar">

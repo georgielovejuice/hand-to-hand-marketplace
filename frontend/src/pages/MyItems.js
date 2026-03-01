@@ -2,69 +2,41 @@ import { useEffect, useState } from "react";
 import { IoTrashBin, IoAddSharp } from 'react-icons/io5';
 import {
   getMyItems,
-  createItem,
   deleteItem,
-  updateItem
 } from "./MyItems_api.js";
 
 import ItemWindow from '../components/CreateItemWindow.jsx'
 
 export default function MyItems({ token, API_URL}) {
   const [items, setItems] = useState([]);
+  const [error, setError] = useState("");
   const [itemWindowItem, setItemWindowItem] = useState(null);
   const [deletingItem, setDeletingItem] = useState({});
   const [promptDelete, setPromptDelete] = useState(false);
   const [itemWindowPopup, setItemWindowPopup] = useState(false);
 
-  const [form, setForm] = useState({
-    name: "",
-    imageURL: "",
-    priceTHB: "",
-    categories: "",
-    details: ""
-  });
-
   useEffect(() => {
     loadItems();
   }, [token]);
 
-  function loadItems() {
-    getMyItems(token, API_URL).then(setItems);
-  }
-
-  function handleChange(e) {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  }
-
-  async function handleCreate() {
-    await createItem(token, {
-      ...form,
-      priceTHB: Number(form.priceTHB),
-      categories: form.categories.split(",").map(c => c.trim())
-    }, API_URL);
-
-    setForm({
-			name: "",
-			imageURL: "",
-			priceTHB: "",
-			categories: "",
-			details: ""
-    });
-
-    loadItems();
+  async function loadItems() {
+    const itemsFromServer = await getMyItems(token, API_URL, setError);
+    if(itemsFromServer) setItems(items => itemsFromServer);
   }
   
   function ItemDeletePopup(){
     return (
-        <div className="absolute block flex justify-center items-center top-0 left-0 w-[99.2vw] h-[100vh] bg-[rgba(255,255,255,0.5)]">
+        <div className="fixed block flex justify-center items-center top-0 left-0 w-[99.2vw] h-[100vh] bg-[rgba(255,255,255,0.8)]">
             <div className="flex flex-col items-center">
                 <h2 className="pt-[15px] pl-[30px] text-[30px] text-[#FF9E21] font-bold text-center">Delete "{deletingItem.name}"?</h2>
                 <div className="left-[50%] mt-[20px]">
                     <button
                         onClick={async () => {
-                            await deleteItem(token, deletingItem._id, API_URL);
-                            await loadItems();
                             setPromptDelete(false);
+                            const errorMessage = await deleteItem(token, deletingItem._id, API_URL);
+                            if(errorMessage) return setError(errorMessage);
+                            setError("");
+                            await loadItems();
                         }}
                         className="mr-[50px] w-[90px] h-[50px] rounded-[10px] bg-[#FF9E21]"
                     >Yes</button>
@@ -129,6 +101,21 @@ export default function MyItems({ token, API_URL}) {
 
   return (
     <div className="w-[99.2vw] h-[100vh] bg-[#FEECD3] p-[35px]"> 
+      {
+        error &&
+        <div className="absolute m-[-35px] z-10 flex flex-col justify-center items-center w-full h-full bg-[rgba(255,255,255,0.9)]">
+            <p className="font-[500] text-[24px] text-red-500">
+              {error}          
+            </p>
+            <button
+                onClick={(_) => {
+                  loadItems();
+                }}
+                className="mt-[20px] w-[90px] h-[50px] rounded-[10px] bg-[#FF9E21]"
+            >Reload</button>  
+        </div>
+      }
+    
       <h1 className="mt-[-20px] text-[48px] font-[700] text-[#7C2808]">My Items</h1>
       <CreateItemButton/>
 
