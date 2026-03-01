@@ -28,27 +28,14 @@ router.get("/", verifyToken, async (req, res) => {
 router.put("/", verifyToken, async (req, res) => {
   try {
     const userCollection = mongoClient.db("User").collection("User");
-    const { name, email, phone, profilePicture } = req.body;
+    const { name, phone, profilePicture } = req.body;
 		const emailFromJWT = req.user.email;
-
-    // email collision check
-		const wantsToChangeEmail = emailFromJWT !== email;
-    if (wantsToChangeEmail) {
-      const exists = await userCollection.findOne({
-        email,
-        _id: { $ne: new ObjectId(req.user.userId) }
-      });
-      if (exists) {
-        return res.status(400).json({ message: "Email already in use" });
-      }
-    }
 
     const result = await userCollection.updateOne(
       { _id: new ObjectId(req.user.userId) },
       {
         $set: {
           ...(name && { name }),
-          ...(email && { email }),
           ...(phone && { phone }),
           ...(profilePicture && { profilePicture }),
           updatedAt: new Date()

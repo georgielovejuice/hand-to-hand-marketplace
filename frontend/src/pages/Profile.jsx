@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import {ioPencil} from 'react-icons/io5';
 import axios from 'axios';
 
 import {ProfileSettingBlock, PasswordSettingBlock, SectionSelectorPanel} from '../components/ProfileComponents.jsx'
@@ -52,45 +51,81 @@ export default function Profile({userObject, setUserObject, API_URL}) {
     let newPfpURL;
     
     async function uploadPfp(){
+      let presignRes;
       try {
-        const presignRes = await axios.post(`${API_URL}/uploads/presign`, 
-          {
-            purpose: "item",
+        presignRes = await fetch(`${API_URL}/uploads/presign`, {
+          method: "POST",
+          body: JSON.stringify({
+            purpose: "profile",
             contentType: pfpFileToUpload.type,
             fileName: pfpFileToUpload.name,
-          },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: userObject.token,
-            }
+          }),
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: userObject.token,
           }
-        );
-        
-        const formData = new FormData();
-        for (const [key, value] of Object.entries(presignRes.data.fields)) {
-          formData.append(key, value);
+        });
+      }catch(err){
+        if(err instanceof TypeError) {
+          setError("Could not connect to server for file upload URL.");
+          return false;
         }
+        throw err;
+      }
+
+      let objectFromResponse;
+      try{
+        objectFromResponse = await presignRes.json();
+      }catch(err){
+        if(err instanceof TypeError){
+          setError("Could not decode response from server.");
+          return false;
+        }if(err instanceof SyntaxError){
+          setError("Could not parse JSON from server.");
+          return false;
+        }
+        throw err;
+      }
+      
+      if(!presignRes.ok){
+        setError(objectFromResponse.message || `Received HTTP status ${presignRes.status} from server.`);
+        return false; 
+      }
         
-        formData.append("file", pfpFileToUpload);
-        const uploadRes = await fetch(presignRes.data.uploadingURL, {
+      const formData = new FormData();
+      for (const [key, value] of Object.entries(objectFromResponse.fields)) {
+        formData.append(key, value);
+      }
+      formData.append("file", pfpFileToUpload);
+      
+      let uploadRes;
+      try{
+        uploadRes = await fetch(objectFromResponse.uploadingURL, {
           method: "POST",
           body: formData,
         });
-        if (!uploadRes.ok) {
-          alert("Image upload failed!");
-          return;
+      }catch(err){
+        if(err instanceof TypeError){
+          setError("Could not connect to web storage for image upload.");
+          return false;
         }
-        
-        newPfpURL = `${presignRes.data.uploadingURL}${presignRes.data.fields.key}`;
-
-      } catch (err) {
-        console.error("Upload error:", err);
       }
+      if(!uploadRes.ok){
+        setError(`Received HTTP status ${uploadRes.status} from web storage.`);    
+        return false;
+      }
+  
+      newPfpURL = `${objectFromResponse.uploadingURL}${objectFromResponse.fields.key}`;
+      return true;
     };    
-    
-    if(pfpFileToUpload)
-      await uploadPfp();
+
+    if(pfpFileToUpload){
+      const uploadedPfp = await uploadPfp();
+      if(!uploadedPfp){
+        setSaving(false);
+        return;
+      }
+    }
     
     try {
       await axios.put(`${API_URL}/profile`, 

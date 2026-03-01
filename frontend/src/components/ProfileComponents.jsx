@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import {IconContext, FaRegCheckCircle } from 'react-icons/fa';
 import axios from 'axios';
 
 export function SectionSelectorPanel({
@@ -127,17 +126,6 @@ export function ProfileSettingBlock({setError, error, originalForm, saveChanges,
             value={form.name}
             onChange={handleChange}
             type="text"
-            className="w-full border border-gray-300 rounded-md p-2 mt-1 text-gray-300"
-          />
-        </label>
-
-        <label className="md:col-span-2">
-          Email
-          <input
-            name="email"
-            value={form.email}
-            onChange={handleChange}
-            type="email"
             className="w-full border border-gray-300 rounded-md p-2 mt-1 text-gray-300"
           />
         </label>
