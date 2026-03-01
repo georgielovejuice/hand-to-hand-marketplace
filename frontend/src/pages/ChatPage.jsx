@@ -110,6 +110,7 @@ export default function ChatPage({APIDomain, JWTToken, userID, otherChatUserID, 
     
     
     async function sendMessage(){
+        setError("");
         if(typingText.trim().length < 1) return;
         setTypingText('');
         
@@ -132,10 +133,8 @@ export default function ChatPage({APIDomain, JWTToken, userID, otherChatUserID, 
             throw err;
         }
         
-        setError('');
         if(response.ok) return await fetchChatAndRedraw();
-        
-            let objectFromResponse;
+        let objectFromResponse;
         try{
             objectFromResponse = await response.json();
             setError(objectFromResponse.message || ("Received HTTP status " + response.status + " from server."));
@@ -147,6 +146,7 @@ export default function ChatPage({APIDomain, JWTToken, userID, otherChatUserID, 
     }
     
     async function sellItem(){
+        setError("");
         let response;
         try{
             response = await fetch(`${APIDomain}/myitems/sell`, {
@@ -187,7 +187,7 @@ export default function ChatPage({APIDomain, JWTToken, userID, otherChatUserID, 
         }, MILLISECONDS_BETWEEN_MESSAGE_FETCH);
         if(msSinceLastMessageFetch < MILLISECONDS_BETWEEN_MESSAGE_FETCH) 
             return () => clearInterval(intervalID);
-        fetchChatAndRedraw();
+        if(!error) fetchChatAndRedraw();
         setMsSinceLastMessageFetch(0);
         return () => clearInterval(intervalID);
     }, [msSinceLastMessageFetch]);
@@ -269,6 +269,22 @@ export default function ChatPage({APIDomain, JWTToken, userID, otherChatUserID, 
             {
                 confirmingSelling && <SellConfirmPopup/>
             }
+            
+            {
+              error &&
+              <div className="absolute z-10 flex flex-col justify-center items-center w-full h-full bg-[rgba(255,255,255,0.9)]">
+                  <p className="font-[500] text-[24px] text-red-500">
+                    {error}          
+                  </p>
+                  <button
+                      onClick={async (_) => {
+                        await getMetadataForChat();
+                        await fetchChatAndRedraw();
+                      }}
+                      className="mt-[20px] w-[90px] h-[50px] rounded-[10px] bg-[#FF9E21]"
+                  >Reload</button>  
+              </div>
+            } 
 
             <Header/>
             <div className="overflow-y-auto w-[100%] h-[70vh] pl-[12vw] pr-[12vw] pt-[50px] bg-[#FFDEB8]">
@@ -290,8 +306,6 @@ export default function ChatPage({APIDomain, JWTToken, userID, otherChatUserID, 
                 />
                 <img onClick={sendMessage} src="/chatsend.png" className="float-right h-[30px] mr-[20px] mt-[10px]" alt='send button'/>
             </div>            
-
-            <p style={{color: 'red'}}>{error}</p>
         </div>
     );
 }
