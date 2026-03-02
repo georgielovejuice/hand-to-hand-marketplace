@@ -23,6 +23,8 @@ router.post("/register", async (req, res) => {
       "amnach.kh",
       "rattachai.ch",
       "surin.ki",
+      "reg.test",
+      "dumpling",
     ];
     
     const trimmedEmail = email.trim();

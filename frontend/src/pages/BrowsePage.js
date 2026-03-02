@@ -6,10 +6,18 @@ export default function BrowsePage({apiURL, userID, setViewingItemID}) {
     const [error, setError] = useState("");
     const [searchText, setSearchText] = useState('');
     const [waitingForResponse, setWaitingForResponse] = useState(false);
+    
+    const [priceBoundaryTHB, setPriceBoundaryTHB] = useState({
+      minimum: "",
+      maximum: "",
+    });
 
     async function fetchItems(){
       setWaitingForResponse(true);      
       setError("");
+      
+      const minimumPriceTHB = Number(priceBoundaryTHB.minimum) || 0.0;
+      const maximumPriceTHB = Number(priceBoundaryTHB.maximum) || Number.MAX_VALUE;
 
       async function receivedResponse(response){
         setWaitingForResponse(false);      
@@ -41,7 +49,7 @@ export default function BrowsePage({apiURL, userID, setViewingItemID}) {
         body: JSON.stringify({
           requestType: "getItems",
           searchBarText: searchText,
-          query: {},
+          query: {priceTHB: {$gte: minimumPriceTHB, $lte: maximumPriceTHB}},
           userID: userID
         }),
         headers: {'Content-Type': 'application/json'}
@@ -82,6 +90,27 @@ export default function BrowsePage({apiURL, userID, setViewingItemID}) {
       }
     
       <SearchBar setSearchText={setSearchText} fetchItems={fetchItems}></SearchBar>
+      <div className="flex justify-center mt-[10px]">
+        <div className="inline-block flex items-center">
+          <input 
+            onChange={(htmlEvent) => {
+              setPriceBoundaryTHB({...priceBoundaryTHB, minimum: htmlEvent.target.value});
+            }}
+            value={priceBoundaryTHB.minimum}
+            className="rounded-[20px] p-[10px] w-[150px] h-[35px]"
+          />
+          <span className="mx-[10px] text-[20px] text-gray-500">to</span>
+          <input 
+            onChange={(htmlEvent) => {
+              setPriceBoundaryTHB({...priceBoundaryTHB, maximum: htmlEvent.target.value});
+            }}
+            value={priceBoundaryTHB.maximum}
+            className="rounded-[20px] p-[10px] w-[150px] h-[35px]"
+          />
+          <span className="mx-[10px] text-[20px] text-gray-500">฿</span>
+        </div>
+      </div>
+      
       <div className='flex justify-center flex-wrap gap-9 p-6'>
       {items.map((item) => (
         //Added key because console was complaining.

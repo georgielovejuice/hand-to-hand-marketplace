@@ -11,7 +11,12 @@ export default function SearchBar({ setSearchText, fetchItems }) {
   }
 
   return (
-    <form onSubmit={sendSearchText} className="relative w-full max-w-lg mx-auto pt-6">
+    <form onSubmit={(htmlEvent) => {
+        sendSearchText(htmlEvent);
+        fetchItems();
+      }} 
+      className="relative w-full max-w-lg mx-auto pt-6"
+    >
       <input
         type="text"
         placeholder="Search marketplace items..."
