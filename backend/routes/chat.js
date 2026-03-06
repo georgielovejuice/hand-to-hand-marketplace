@@ -143,11 +143,13 @@ router.get('/', verifyToken, async (request, response) => {
     if(otheruserid && !isValidObjectIDConstructor(otheruserid))
         return response.status(HTTP_STATUS_FOR_BAD_REQUEST).json({message: "Invalid otheruserid from request header."});    
 
-    if(!otheruserid){
-        const itemCollection = mongoClient.db("Item").collection("Item");
-        const item = await itemCollection.findOne({_id: new ObjectId(itemid)});
+    const itemCollection = mongoClient.db("Item").collection("Item");
+    const item = await itemCollection.findOne({_id: new ObjectId(itemid)});
+    if(!item)
+      return response.status(HTTP_STATUS_FOR_BAD_REQUEST).json({message: "No item corresponding to given item ID."});
+
+    if(!otheruserid)
         otheruserid = item.ownerId;
-    }
 
     const EARLIER_FIRST = 1;
     const chatCollection = mongoClient.db("Chat").collection("Chat");
@@ -228,6 +230,9 @@ router.post('/', verifyToken, async (request, response) => {
     const chatCollection = mongoClient.db("Chat").collection("Chat");
     const itemCollection = mongoClient.db("Item").collection("Item");
     const item = await itemCollection.findOne({_id: new ObjectId(itemID)});
+    if(!item)
+      return response.status(HTTP_STATUS_FOR_BAD_REQUEST).json({message: "No item corresponding to given item ID."});   
+    
     const chatIsReadOnly = item.status === "sold"
     if(chatIsReadOnly)
         return response.status(HTTP_STATUS_FOR_BAD_REQUEST).json({message: "Chat is now read only."});

@@ -3,6 +3,7 @@ import express from "express";
 import { ObjectId } from "mongodb";
 import { verifyToken } from "../middleware/auth.js";
 import openAIClient from '../openAI.js';
+import mongoClient from '../database.js';
 
 async function getItemSummary(itemName, itemCategories, itemDetails){
   /*
@@ -77,11 +78,18 @@ export default function myItemsRoute(getDB) {
 
     const db = getDB();
     const { id } = req.params;
+    const objectID = new ObjectId(id);
 
-    await db.collection("Item").deleteOne({
-      _id: new ObjectId(id),
+    const itemDeleteResult = await db.collection("Item").deleteOne({
+      _id: objectID,
       ownerId: req.user.userId
     });
+    if(!itemDeleteResult.acknowledged)
+      return res.status(500).json({error: "Database couldn't delete the item."});
+    
+    const chatDeleteResult = await mongoClient.db("Chat").collection("Chat").deleteMany({itemID: id});
+    if(!chatDeleteResult.acknowledged) 
+      return res.status(500).json({error: "Database couldn't delete chats of the item."});
 
     res.json({ success: true });
   });
