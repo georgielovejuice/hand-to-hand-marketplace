@@ -34,7 +34,7 @@ export async function queryItems(parsedObject, itemCollection, userCollection, r
   
   async function suggestItemOrder(items, searchtext){
     const response = await openAIClient.responses.create({
-        model: "gpt-4.1-nano",
+        model: "gpt-4.1-mini",
         input: `
         Based on the text "${searchtext}", sort the _id of the following items based on how much of its summary attribute matches the text.
         Return only sorted _ids as an Array of strings with no other text, warnings or suggestions.

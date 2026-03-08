@@ -192,7 +192,7 @@ router.post('/', verifyToken, async (request, response) => {
     
     async function adjustUserPreferenceString(originalPreference, itemSummary){
       const response = await openAIClient.responses.create({
-          model: "gpt-4.1-nano",
+          model: "gpt-4.1-mini",
           input: `
           Given that the orignal user preference is: "${originalPreference}",
           and the summary of the item they are potentially interested is "${itemSummary}",

@@ -12,9 +12,9 @@ async function getItemSummary(itemName, itemCategories, itemDetails){
   */
   const FIRST_CHARACTER = 0;
     const response = await openAIClient.responses.create({
-        model: "gpt-4.1-nano",
+        model: "gpt-4.1-mini",
         input: `
-        Summarise the given item in 5 words:
+        Summarise the given item in 10 words, give description least priority:
         Name: ${itemName}
         Categories: ${itemCategories}
         Description: ${itemDetails}
