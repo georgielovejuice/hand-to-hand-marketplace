@@ -142,7 +142,7 @@ export default function Profile({userObject, setUserObject, API_URL}) {
         }
       );
 
-      setOriginalForm({...form, profilePicture: newPfpURL});
+      setOriginalForm({...form, profilePicture: newPfpURL || form.profilePicture});
       
       setUserObject({
         ...userObject, 

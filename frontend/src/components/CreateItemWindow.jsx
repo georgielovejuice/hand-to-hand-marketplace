@@ -114,7 +114,7 @@ export default function CreateItem({item, closeWindow, token, API_URL, updateMyI
   function MuiChip({value}){
     function removeValue(str){
       const strIndex = categories.indexOf(str);
-      setCategories(categories => categories.splice(strIndex, 1));
+      setCategories(categories.toSpliced(strIndex, 1));
     }
     
     return (

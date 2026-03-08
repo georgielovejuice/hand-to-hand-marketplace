@@ -63,10 +63,12 @@ export default function ItemPage({itemAPIURL, JWTToken, userID, redirectToChatPa
       setItemObject(objectFromResponse);
       setItemImageURLs([
         objectFromResponse.imageURL, 
+        /*
         "https://leonardpaper.com/Content/Images/Product/UP-12Wa.jpg",
         "https://www.chainbaker.com/wp-content/uploads/2023/04/IMG_4692.jpg",
         "https://funcakes.com/content/uploads/2020/08/Donut-600x450.png",
-        "https://www.cybermodeler.com/aircraft/f-16/images/intro_f-16ccip.jpg"			
+        "https://www.cybermodeler.com/aircraft/f-16/images/intro_f-16ccip.jpg"		
+        */        
       ]);
       setError('');
     }catch (err){
